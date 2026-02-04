@@ -6,7 +6,6 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { useRealtimeSubscription } from './use-realtime-subscription';
 import { notificationKeys } from './use-notifications';
 import type { Notification } from '@/types';
@@ -60,7 +59,6 @@ export function useNotificationsRealtime({
   enabled = true,
 }: UseNotificationsRealtimeOptions = {}): UseNotificationsRealtimeReturn {
   const { user } = useAuth();
-  const { t } = useLanguage();
 
   // Handle new notification event
   const handleEvent = useCallback(
@@ -85,7 +83,7 @@ export function useNotificationsRealtime({
       // Call custom handler if provided
       onNewNotification?.(newNotification);
     },
-    [user?.id, showToast, onNewNotification, t]
+    [user?.id, showToast, onNewNotification]
   );
 
   // Subscribe to notifications table

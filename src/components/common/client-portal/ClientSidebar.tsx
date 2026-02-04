@@ -17,6 +17,7 @@ import { LAYOUT } from '@/lib/constants';
 import { Logo } from '../Logo';
 import { LanguageToggle } from '../LanguageToggle';
 import { UserMenu } from '../UserMenu';
+import { NotificationCenter } from '@/components/notifications';
 import { CLIENT_NAV_ITEMS } from './ClientNavItems';
 
 export function ClientSidebar() {
@@ -30,7 +31,10 @@ export function ClientSidebar() {
       {/* Logo section with subtle bottom fade */}
       <div className="flex items-center justify-between h-[72px] px-5 border-b border-border/30">
         <Logo size="sm" />
-        <LanguageToggle />
+        <div className="flex items-center gap-2">
+          <NotificationCenter variant="client" />
+          <LanguageToggle />
+        </div>
       </div>
 
       {/* Navigation items */}

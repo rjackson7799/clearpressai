@@ -14,6 +14,7 @@ import { LAYOUT } from '@/lib/constants';
 
 import { Logo } from '../Logo';
 import { UserMenu } from '../UserMenu';
+import { NotificationCenter } from '@/components/notifications';
 import { PR_NAV_ITEMS } from './PRNavItems';
 
 interface PRSidebarProps {
@@ -44,17 +45,20 @@ export function PRSidebar({ isCollapsed, onToggleCollapse }: PRSidebarProps) {
       {/* Logo section */}
       <div className="flex items-center justify-between h-16 px-4 border-b">
         <Logo size="sm" showText={!isCollapsed} />
-        {!isCollapsed && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={onToggleCollapse}
-            aria-label={t('nav.collapse')}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-        )}
+        <div className="flex items-center gap-1">
+          <NotificationCenter variant="pr" />
+          {!isCollapsed && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={onToggleCollapse}
+              aria-label={t('nav.collapse')}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Collapsed expand button */}

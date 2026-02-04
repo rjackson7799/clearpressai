@@ -102,23 +102,40 @@ export function useRealtimeSubscription<T extends { [key: string]: any }>({
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
 
+  // Stabilize queryKeysToInvalidate to prevent infinite re-renders
+  // This uses a ref pattern: we store the keys in a ref and only update
+  // when the serialized value actually changes
+  const queryKeysRef = useRef<QueryKey[]>(queryKeysToInvalidate);
+  const queryKeysStringified = JSON.stringify(queryKeysToInvalidate);
+
+  useEffect(() => {
+    queryKeysRef.current = queryKeysToInvalidate;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryKeysStringified]);
+
+  // Stabilize onEvent callback using ref to avoid dependency issues
+  const onEventRef = useRef(onEvent);
+  useEffect(() => {
+    onEventRef.current = onEvent;
+  }, [onEvent]);
+
   // Check if subscription should be active
   const shouldSubscribe = enabled && !!user;
 
-  // Handle incoming realtime events
+  // Handle incoming realtime events - stable callback that reads from refs
   const handleEvent = useCallback(
     (payload: RealtimePostgresChangesPayload<T>) => {
       if (!isMountedRef.current) return;
 
-      // Invalidate specified query keys
-      queryKeysToInvalidate.forEach((queryKey) => {
+      // Invalidate specified query keys (read from ref for stability)
+      queryKeysRef.current.forEach((queryKey) => {
         queryClient.invalidateQueries({ queryKey });
       });
 
-      // Call custom event handler if provided
-      onEvent?.(payload);
+      // Call custom event handler if provided (read from ref for stability)
+      onEventRef.current?.(payload);
     },
-    [queryClient, queryKeysToInvalidate, onEvent]
+    [queryClient]
   );
 
   // Create and subscribe to channel
