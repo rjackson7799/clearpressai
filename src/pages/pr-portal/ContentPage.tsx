@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAllContentItems } from '@/hooks/use-content';
 import { useProjects } from '@/hooks/use-projects';
+import { useClients } from '@/hooks/use-clients';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -87,7 +88,20 @@ function ContentFilters({
   onFilterChange: (filters: Partial<ContentPageFilters>) => void;
 }) {
   const { t } = useLanguage();
+  const { data: clientsData } = useClients({ per_page: 100 });
   const { data: projectsData } = useProjects({ per_page: 100 });
+
+  // Filter projects by selected client
+  const filteredProjects = filters.client_id
+    ? projectsData?.data.filter((p) => p.client_id === filters.client_id)
+    : projectsData?.data;
+
+  // Handle client change - reset project when client changes
+  const handleClientChange = (value: string) => {
+    const clientId = value === 'all' ? undefined : value;
+    // Reset project filter when client changes
+    onFilterChange({ client_id: clientId, project_id: undefined });
+  };
 
   return (
     <div className="flex flex-col sm:flex-row gap-3">
@@ -102,6 +116,24 @@ function ContentFilters({
         />
       </div>
 
+      {/* Client Filter */}
+      <Select
+        value={filters.client_id ?? 'all'}
+        onValueChange={handleClientChange}
+      >
+        <SelectTrigger className="w-full sm:w-[180px]">
+          <SelectValue placeholder={t('projects.filterByClient')} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">{t('projects.allClients')}</SelectItem>
+          {clientsData?.data.map((client) => (
+            <SelectItem key={client.id} value={client.id}>
+              {client.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
       {/* Project Filter */}
       <Select
         value={filters.project_id ?? 'all'}
@@ -114,7 +146,7 @@ function ContentFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">{t('projects.allProjects')}</SelectItem>
-          {projectsData?.data.map((project) => (
+          {filteredProjects?.map((project) => (
             <SelectItem key={project.id} value={project.id}>
               {project.name}
             </SelectItem>
@@ -135,7 +167,7 @@ function ContentFilters({
           <SelectValue placeholder={t('content.contentType')} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">{t('common.all')}</SelectItem>
+          <SelectItem value="all">{t('projects.allTypes')}</SelectItem>
           {CONTENT_TYPES.map((type) => (
             <SelectItem key={type} value={type}>
               {t(`content.${type}`)}
@@ -153,11 +185,11 @@ function ContentFilters({
           })
         }
       >
-        <SelectTrigger className="w-full sm:w-[150px]">
+        <SelectTrigger className="w-full sm:w-[180px]">
           <SelectValue placeholder={t('projects.status')} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">{t('common.all')}</SelectItem>
+          <SelectItem value="all">{t('projects.allStatuses')}</SelectItem>
           {CONTENT_STATUSES.map((status) => (
             <SelectItem key={status} value={status}>
               {t(`content.status_${status}`)}

@@ -18,6 +18,7 @@ import {
   fetchContentStats,
   fetchPendingContentForClient,
   fetchAllContentItems,
+  duplicateContentItem,
   type AllContentFilters,
 } from '@/services/content';
 import type {
@@ -318,5 +319,32 @@ export function usePendingContentForClient(clientId: string | undefined) {
     },
     enabled: !!clientId,
     staleTime: 30 * 1000,
+  });
+}
+
+/**
+ * Duplicate a content item with its current version
+ */
+export function useDuplicateContentItem() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (contentItemId: string) => {
+      if (!user?.id) throw new Error('ログインが必要です');
+      return duplicateContentItem(contentItemId, user.id);
+    },
+    onSuccess: (newItem) => {
+      queryClient.invalidateQueries({
+        queryKey: contentKeys.list(newItem.project_id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: contentKeys.stats(newItem.project_id),
+      });
+      toast.success('コンテンツを複製しました');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'コンテンツの複製に失敗しました');
+    },
   });
 }

@@ -119,7 +119,7 @@ export async function fetchPendingItems(clientId: string, limit: number = 5): Pr
     type: item.type,
     projectName: projectMap.get(item.project_id) || 'Unknown',
     projectId: item.project_id,
-    submittedAt: item.updated_at,
+    submittedAt: item.updated_at || new Date().toISOString(),
   }));
 }
 
@@ -149,9 +149,9 @@ export async function fetchRecentProjects(clientId: string, limit: number = 5): 
   return projects.map(project => ({
     id: project.id,
     name: project.name,
-    status: project.status,
-    urgency: project.urgency,
+    status: project.status || 'draft',
+    urgency: project.urgency || 'standard',
     contentCount: Array.isArray(project.content_items) ? project.content_items.length : 0,
-    updatedAt: project.updated_at,
+    updatedAt: project.updated_at || new Date().toISOString(),
   }));
 }

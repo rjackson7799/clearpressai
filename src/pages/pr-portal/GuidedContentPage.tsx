@@ -108,12 +108,14 @@ export function GuidedContentPage() {
   const handleEnhanceTitle = useCallback(async () => {
     if (!title.trim()) return;
     try {
-      const enhanced = await enhanceTitle.mutateAsync({
+      const suggestions = await enhanceTitle.mutateAsync({
         title,
         contentType,
         context: summary,
       });
-      if (enhanced !== title) {
+      // Use the first suggestion if available and different from current title
+      const enhanced = Array.isArray(suggestions) ? suggestions[0] : suggestions;
+      if (enhanced && enhanced !== title) {
         setTitle(enhanced);
         toast.success(t('common.success'));
       }

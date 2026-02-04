@@ -38,8 +38,6 @@ import {
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { Link } from 'react-router-dom';
-import type { ActivityItem } from '@/services/settings';
 
 // Time-based greeting configuration
 function getGreetingConfig(hour: number) {
@@ -202,7 +200,7 @@ export function PRDashboard() {
   }, [profile?.name]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Welcome Header */}
       <div
         className={cn(
@@ -276,7 +274,7 @@ export function PRDashboard() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {STAT_CARDS.map((stat) => {
           const Icon = stat.icon;
           const label = stat.labelKey
@@ -420,11 +418,11 @@ export function PRDashboard() {
                         </p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs text-gray-500">
-                            {item.userName}
+                            {item.user_name}
                           </span>
                           <span className="text-xs text-gray-400">•</span>
                           <span className="text-xs text-gray-400">
-                            {formatDistanceToNow(new Date(item.createdAt), {
+                            {formatDistanceToNow(new Date(item.created_at), {
                               addSuffix: true,
                               locale: language === 'ja' ? ja : undefined,
                             })}

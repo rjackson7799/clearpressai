@@ -99,6 +99,11 @@ export interface NotificationPreferences {
   email_digest?: 'none' | 'daily' | 'weekly';
   in_app_all?: boolean;
   push_enabled?: boolean;
+  // Client-specific notification preferences
+  email_project_updates?: boolean;
+  email_content_ready?: boolean;
+  email_deadline_reminders?: boolean;
+  in_app_enabled?: boolean;
 }
 
 export interface ExtendedUserPreferences extends UserPreferences {
@@ -122,7 +127,7 @@ export async function fetchUserPreferences(
     throw new Error('ユーザー設定の取得に失敗しました');
   }
 
-  return (data?.preferences as ExtendedUserPreferences) || {
+  return (data?.preferences as unknown as ExtendedUserPreferences) || {
     language: 'ja',
     theme: 'system',
     notifications_email: true,
@@ -202,7 +207,7 @@ export interface ActivityItem {
  * Fetch recent activity for organization
  */
 export async function fetchRecentActivity(
-  organizationId: string,
+  _organizationId: string,
   limit: number = 10
 ): Promise<ActivityItem[]> {
   // Fetch from notifications table as activity proxy
@@ -237,7 +242,7 @@ export async function fetchRecentActivity(
     project_name: (n.metadata as { project_name?: string })?.project_name,
     content_id: (n.metadata as { content_id?: string })?.content_id,
     content_title: (n.metadata as { content_title?: string })?.content_title,
-    created_at: n.created_at,
+    created_at: n.created_at || new Date().toISOString(),
   }));
 }
 

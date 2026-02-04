@@ -65,15 +65,6 @@ const ClientNotificationsPage = lazy(() => import('@/pages/client-portal/Notific
 const ReferenceDocumentsPage = lazy(() => import('@/pages/client-portal/ReferenceDocumentsPage').then(m => ({ default: m.ReferenceDocumentsPage })));
 const ClientSettingsPage = lazy(() => import('@/pages/client-portal/ClientSettingsPage').then(m => ({ default: m.ClientSettingsPage })));
 
-// Placeholder pages for future implementation
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <div className="flex items-center justify-center h-64">
-      <p className="text-muted-foreground">{title} - Coming soon</p>
-    </div>
-  );
-}
-
 function RoleBasedRedirect() {
   const { role } = useAuth();
 

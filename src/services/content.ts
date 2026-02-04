@@ -384,6 +384,7 @@ export async function fetchContentStats(projectId: string): Promise<{
  * Extended filters for all content query
  */
 export interface AllContentFilters extends ContentFilters {
+  client_id?: string;
   project_id?: string;
   page?: number;
   per_page?: number;
@@ -414,7 +415,7 @@ export async function fetchAllContentItems(
     .from('content_items')
     .select(`
       *,
-      project:projects!inner(id, name, organization_id),
+      project:projects!inner(id, name, organization_id, client_id),
       current_version:content_versions!content_items_current_version_fkey(
         id,
         version_number,
@@ -427,6 +428,11 @@ export async function fetchAllContentItems(
     `, { count: 'exact' })
     .eq('projects.organization_id', organizationId)
     .order('updated_at', { ascending: false });
+
+  // Filter by client (filter on the joined projects table)
+  if (filters?.client_id) {
+    query = query.eq('projects.client_id', filters.client_id);
+  }
 
   // Filter by project
   if (filters?.project_id) {
@@ -498,4 +504,48 @@ export async function fetchPendingContentForClient(
   }
 
   return (data ?? []).map((row) => dbContentItemToContentItem(row as unknown as DbContentItem));
+}
+
+// ===== Content Duplication =====
+
+/**
+ * Duplicate a content item with its current version
+ */
+export async function duplicateContentItem(
+  sourceContentId: string,
+  userId: string
+): Promise<ContentItem> {
+  // 1. Fetch source with current_version
+  const source = await fetchContentItem(sourceContentId);
+  if (!source) {
+    throw new Error('複製元のコンテンツが見つかりません');
+  }
+
+  // 2. Create new content item
+  const newItem = await createContentItem(
+    source.project_id,
+    {
+      type: source.type,
+      title: `${source.title} - コピー`,
+      settings: source.settings,
+    },
+    userId
+  );
+
+  // 3. If source has current_version, duplicate it
+  if (source.current_version) {
+    const { createVersion } = await import('./versions');
+    await createVersion(
+      newItem.id,
+      {
+        content: source.current_version.content,
+        compliance_score: source.current_version.compliance_score,
+        compliance_details: source.current_version.compliance_details,
+        generation_params: source.current_version.generation_params,
+      },
+      userId
+    );
+  }
+
+  return newItem;
 }

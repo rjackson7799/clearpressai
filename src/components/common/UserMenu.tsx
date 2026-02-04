@@ -3,8 +3,10 @@
  * Dropdown menu with user profile info and actions
  */
 
-import { ChevronDown, LogOut, Settings, User } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronDown, Loader2, LogOut, Settings, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -31,10 +33,21 @@ export function UserMenu({ compact = false, className }: UserMenuProps) {
   const { t } = useLanguage();
   const { profile, signOut, isPRAdmin, isPRStaff, isClientUser } = useAuth();
   const navigate = useNavigate();
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/auth/login', { replace: true });
+  const handleSignOut = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isSigningOut) return;
+
+    setIsSigningOut(true);
+    try {
+      await signOut();
+      navigate('/auth/login', { replace: true });
+    } catch (error) {
+      console.error('Sign out error:', error);
+      toast.error(t('auth.logoutError'));
+      setIsSigningOut(false);
+    }
   };
 
   const handleProfile = () => {
@@ -141,8 +154,16 @@ export function UserMenu({ compact = false, className }: UserMenuProps) {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={handleSignOut} variant="destructive">
-          <LogOut className="mr-2 h-4 w-4" />
+        <DropdownMenuItem
+          onClick={handleSignOut}
+          variant="destructive"
+          disabled={isSigningOut}
+        >
+          {isSigningOut ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <LogOut className="mr-2 h-4 w-4" />
+          )}
           <span>{t('auth.logout')}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>

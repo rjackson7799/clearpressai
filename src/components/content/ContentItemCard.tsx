@@ -17,6 +17,7 @@ import {
   Clock,
   FileText,
   FolderOpen,
+  Copy,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -32,6 +33,7 @@ interface ContentItemCardProps {
   content: ContentItem;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  onDuplicate?: (id: string) => void;
   isLocked?: boolean;
   lockedByName?: string;
   /** Project name to display when showing content across projects */
@@ -42,6 +44,7 @@ export function ContentItemCard({
   content,
   onEdit,
   onDelete,
+  onDuplicate,
   isLocked = false,
   lockedByName,
   projectName,
@@ -83,6 +86,12 @@ export function ContentItemCard({
                 <Edit className="h-4 w-4 mr-2" />
                 {t('common.edit')}
               </DropdownMenuItem>
+              {onDuplicate && (
+                <DropdownMenuItem onClick={() => onDuplicate(content.id)}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  {t('content.duplicate')}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => onDelete(content.id)}

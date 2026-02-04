@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react';
-import { Building2, Palette, Globe, Clock, Save } from 'lucide-react';
+import { Building2, Palette, Globe, Save } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -28,7 +28,8 @@ import type { OrganizationSettingsData } from '@/services/settings';
 
 export function OrganizationSettings() {
   const { t, language } = useLanguage();
-  const { organization, role } = useAuth();
+  const { profile, role } = useAuth();
+  const organization = profile?.organization;
   const isAdmin = role === 'pr_admin';
 
   const { data: settings, isLoading } = useOrganizationSettings(organization?.id);

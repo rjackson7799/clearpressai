@@ -1304,4 +1304,124 @@ Requires `ANTHROPIC_API_KEY` secret in Supabase dashboard.
 
 ---
 
+---
+
+### 2025-02-03 - P2 Content Duplication Feature (Session 27)
+
+#### Overview
+Implemented the first P2 roadmap item: Content Duplication feature allowing PR staff to duplicate existing content items as a starting point for new pieces.
+
+#### Implementation ✅ COMPLETE
+
+**Service Layer:**
+- [x] Added `duplicateContentItem()` function to `src/services/content.ts`
+  - Fetches source content with current_version
+  - Creates new content item with " - コピー" title suffix
+  - Copies settings, type, and current version content
+  - Preserves compliance score and generation params
+  - Resets status to 'draft'
+
+**React Hook:**
+- [x] Added `useDuplicateContentItem()` hook to `src/hooks/use-content.ts`
+  - TanStack Query mutation with proper invalidation
+  - Invalidates content list and stats queries
+  - Toast notifications for success/error
+
+**UI Components:**
+- [x] Updated `ContentItemCard.tsx` with:
+  - `onDuplicate` prop
+  - Copy icon from lucide-react
+  - "複製" dropdown menu item
+- [x] Updated `ContentItemList.tsx` with:
+  - `useDuplicateContentItem` hook integration
+  - `handleDuplicate` handler
+  - Prop passed to ContentItemCard
+
+**Translations:**
+- [x] Added `content.duplicate` key:
+  - Japanese: "複製"
+  - English: "Duplicate"
+
+#### Files Modified (5)
+```
+src/services/content.ts - Added duplicateContentItem() function
+src/hooks/use-content.ts - Added useDuplicateContentItem() hook
+src/components/content/ContentItemCard.tsx - Added duplicate action to dropdown
+src/components/content/ContentItemList.tsx - Wired up duplicate handler
+src/lib/translations.ts - Added duplicate translations (ja/en)
+```
+
+#### What Gets Duplicated
+| Copied | Not Copied |
+|--------|------------|
+| ✅ Content type | ❌ Status (resets to `draft`) |
+| ✅ Title (with " - コピー" suffix) | ❌ Locked state |
+| ✅ Settings (target_length, tone, etc.) | ❌ Comments & suggestions |
+| ✅ Current version content | ❌ Version history (new v1) |
+| ✅ Compliance score & details | ❌ Approvals |
+| ✅ Generation params | |
+
+#### Verification
+- Dev server starts successfully
+- No lint errors in modified files
+- Pre-existing type errors in other files remain (unrelated)
+
+#### Roadmap Updated
+- Updated ROADMAP.md to mark Content Duplication as ✅ COMPLETE
+- Next recommended features: Keyboard Shortcuts, Deadline Reminders
+
+---
+
+### 2025-02-03 - Content Page Filter Improvements (Session 28)
+
+#### Overview
+Improved the Content page filter UX by adding clearer dropdown labels and a new client filter with cascading behavior.
+
+#### Problem Solved
+1. **Ambiguous "All" labels** - Two dropdowns showed just "All" with no context about what they filtered
+2. **Missing client filter** - Users couldn't filter content by client, only by project
+
+#### Implementation ✅ COMPLETE
+
+**Translations:**
+- [x] Added `allTypes` translation key:
+  - Japanese: `すべてのタイプ`
+  - English: `All types`
+
+**Service Layer:**
+- [x] Updated `AllContentFilters` interface in `src/services/content.ts`:
+  - Added `client_id?: string` field
+- [x] Updated `fetchAllContentItems()` query:
+  - Added `client_id` to project select for filtering
+  - Added filter: `.eq('projects.client_id', filters.client_id)`
+
+**UI Components:**
+- [x] Updated `ContentPage.tsx`:
+  - Added `useClients` hook import
+  - Added client filter dropdown before project dropdown
+  - Implemented cascading filter: selecting a client filters the project dropdown
+  - Project filter resets to "all" when client changes
+  - Changed "All" labels to descriptive text:
+    - Content Type: "All types" (`t('projects.allTypes')`)
+    - Status: "All statuses" (`t('projects.allStatuses')`)
+
+#### Files Modified (3)
+```
+src/lib/translations.ts - Added allTypes translation (ja/en)
+src/services/content.ts - Added client_id filter support
+src/pages/pr-portal/ContentPage.tsx - Added client filter dropdown, updated labels
+```
+
+#### UI Layout After Changes
+```
+[Search...] [All clients ▼] [All projects ▼] [All types ▼] [All statuses ▼]
+```
+
+#### Verification
+- TypeScript compilation passes
+- All filters now have clear, descriptive labels
+- Client filter cascades to project filter
+
+---
+
 *Last Updated: 2025-02-03*

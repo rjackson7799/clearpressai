@@ -470,6 +470,72 @@
   }
 }
 
+/* ===== Compliance Mark Inline Highlighting (Grammar-Checker Style) ===== */
+@layer components {
+  /* Error marks - Red wavy underline (must fix) */
+  .compliance-mark-error {
+    text-decoration: underline wavy;
+    text-decoration-color: var(--color-error);
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1.5px;
+    cursor: pointer;
+    background-color: var(--color-error-light);
+    border-radius: 2px;
+    padding: 0 1px;
+    transition: background-color var(--duration-fast) var(--ease-out);
+  }
+
+  .compliance-mark-error:hover {
+    background-color: oklch(90% 0.05 28);
+  }
+
+  /* Warning marks - Yellow wavy underline (should fix) */
+  .compliance-mark-warning {
+    text-decoration: underline wavy;
+    text-decoration-color: var(--color-warning);
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1.5px;
+    cursor: pointer;
+    background-color: var(--color-warning-light);
+    border-radius: 2px;
+    padding: 0 1px;
+    transition: background-color var(--duration-fast) var(--ease-out);
+  }
+
+  .compliance-mark-warning:hover {
+    background-color: oklch(92% 0.06 75);
+  }
+
+  /* Suggestion marks - Blue dotted underline (consider) */
+  .compliance-mark-suggestion {
+    text-decoration: underline dotted;
+    text-decoration-color: var(--color-info);
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1.5px;
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-out);
+  }
+
+  .compliance-mark-suggestion:hover {
+    background-color: var(--color-info-light);
+    border-radius: 2px;
+  }
+
+  /* Flash animation for "View in Context" highlighting */
+  .compliance-mark-flash {
+    animation: complianceFlash 1.5s ease-out;
+  }
+
+  @keyframes complianceFlash {
+    0%, 100% {
+      background-color: inherit;
+    }
+    25%, 75% {
+      background-color: oklch(85% 0.12 75);
+    }
+  }
+}
+
 /* ===== Theme Variables Mapping ===== */
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);

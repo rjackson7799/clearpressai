@@ -49,6 +49,19 @@ export function useGenerateContent() {
 export function useGenerateContentWithProgress() {
   const [progress, setProgress] = useState(0);
   const generateMutation = useGenerateContent();
+  const mountedRef = useRef(true);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const generate = useCallback(
     async (request: GenerateContentRequest): Promise<GenerateContentResponse> => {
@@ -68,11 +81,15 @@ export function useGenerateContentWithProgress() {
         return result;
       } finally {
         clearInterval(progressInterval);
-        // Reset progress after a delay
-        setTimeout(() => setProgress(0), 1000);
+        // Reset progress after a delay, only if still mounted
+        timeoutRef.current = setTimeout(() => {
+          if (mountedRef.current) {
+            setProgress(0);
+          }
+        }, 1000);
       }
     },
-    [generateMutation]
+    [generateMutation.mutateAsync]
   );
 
   return {
@@ -247,6 +264,19 @@ export function useExtractStyle() {
 export function useExtractStyleWithProgress() {
   const [progress, setProgress] = useState(0);
   const extractMutation = useExtractStyle();
+  const mountedRef = useRef(true);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const extract = useCallback(
     async (request: ExtractStyleRequest): Promise<ExtractStyleResponse> => {
@@ -266,11 +296,15 @@ export function useExtractStyleWithProgress() {
         return result;
       } finally {
         clearInterval(progressInterval);
-        // Reset progress after a delay
-        setTimeout(() => setProgress(0), 1000);
+        // Reset progress after a delay, only if still mounted
+        timeoutRef.current = setTimeout(() => {
+          if (mountedRef.current) {
+            setProgress(0);
+          }
+        }, 1000);
       }
     },
-    [extractMutation]
+    [extractMutation.mutateAsync]
   );
 
   return {

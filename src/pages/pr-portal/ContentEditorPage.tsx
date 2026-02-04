@@ -13,7 +13,7 @@
  * └───────────────────────────────────────┴─────────────────────┘
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -22,6 +22,9 @@ import LinkExtension from '@tiptap/extension-link';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import Highlight from '@tiptap/extension-highlight';
+import { ComplianceMark } from '@/components/editor/extensions/compliance-mark';
+import { ComplianceTooltip } from '@/components/editor/ComplianceTooltip';
+import { useComplianceMarks } from '@/hooks/use-compliance-marks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +45,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   useContentItem,
   useUpdateContentItem,
+  useUpdateContentStatus,
   useLockContentItem,
   useUnlockContentItem,
 } from '@/hooks/use-content';
@@ -52,10 +56,12 @@ import {
   useDebouncedComplianceCheck,
 } from '@/hooks/use-ai';
 import { useContentRealtime } from '@/hooks/use-content-realtime';
-import { ArrowLeft, Save, Cloud, CloudOff, Loader2, Settings, Sparkles, FileDown } from 'lucide-react';
+import { ArrowLeft, Save, Cloud, CloudOff, Loader2, Settings, Sparkles, FileDown, SendHorizonal } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useDebouncedCallback } from 'use-debounce';
+import { useKeyboardShortcuts, formatShortcut } from '@/hooks/use-keyboard-shortcuts';
+import { useCommandPalette } from '@/contexts/CommandPaletteContext';
 import type { StructuredContent, ContentType } from '@/types';
 import type { ExportOptions } from '@/types/export';
 import { ExportDialog } from '@/components/export';
@@ -75,6 +81,7 @@ export function ContentEditorPage() {
 
   // Mutations
   const updateContentMutation = useUpdateContentItem();
+  const updateStatusMutation = useUpdateContentStatus();
   const lockMutation = useLockContentItem();
   const unlockMutation = useUnlockContentItem();
   const createVersionMutation = useCreateVersion();
@@ -123,6 +130,7 @@ export function ContentEditorPage() {
   const [generatedComplianceScore, setGeneratedComplianceScore] = useState(0);
   const hasLock = useRef(false);
   const lastSavedContent = useRef('');
+  const editorContainerRef = useRef<HTMLDivElement>(null);
 
   // Initialize editor
   const editor = useEditor({
@@ -143,6 +151,7 @@ export function ContentEditorPage() {
       Underline,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Highlight.configure({ multicolor: true }),
+      ComplianceMark,
     ],
     editorProps: {
       attributes: {
@@ -172,6 +181,14 @@ export function ContentEditorPage() {
     },
   });
 
+  // Compliance marks hook for inline highlighting (must be after editor initialization)
+  const {
+    applyMarks: applyComplianceMarks,
+    dismissIssue: dismissComplianceIssue,
+    acceptSuggestion: acceptComplianceSuggestion,
+    scrollToIssue,
+  } = useComplianceMarks({ editor });
+
   // Load content into editor
   useEffect(() => {
     if (content && editor) {
@@ -183,6 +200,13 @@ export function ContentEditorPage() {
       lastSavedContent.current = editor.getHTML();
     }
   }, [content, editor]);
+
+  // Apply compliance marks when results change
+  useEffect(() => {
+    if (complianceResult && editor) {
+      applyComplianceMarks(complianceResult);
+    }
+  }, [complianceResult, editor, applyComplianceMarks]);
 
   // Acquire lock on mount
   useEffect(() => {
@@ -426,7 +450,7 @@ export function ContentEditorPage() {
     }
   }, [editor, content, title, project, complianceResult, t]);
 
-  // Accept compliance suggestion
+  // Accept compliance suggestion (from sidebar panel)
   const handleAcceptSuggestion = useCallback((issue: { suggestion?: string; position?: { start: number; end: number } }) => {
     if (!editor || !issue.suggestion || !issue.position) return;
 
@@ -440,6 +464,113 @@ export function ContentEditorPage() {
     setSaveStatus('unsaved');
     toast.success(t('ai.acceptSuggestion'));
   }, [editor, t]);
+
+  // View compliance issue in context (scroll to and highlight)
+  const handleViewInContext = useCallback((issue: { position?: { start: number; end: number } }) => {
+    if (!issue.position) return;
+
+    // Generate the same ID format used by the marks hook
+    const issueId = `${issue.position.start}-${issue.position.end}-`;
+    scrollToIssue(issueId);
+  }, [scrollToIssue]);
+
+  // Command palette context
+  const { registerCommands, unregisterCommand, setActiveContext } = useCommandPalette();
+
+  // Set active context to 'editor' when this page mounts
+  useEffect(() => {
+    setActiveContext('editor');
+    return () => setActiveContext('global');
+  }, [setActiveContext]);
+
+  // Define editor-specific commands
+  const editorCommands = useMemo(() => [
+    {
+      id: 'editor-save',
+      label: t('commandPalette.commands.save'),
+      description: t('commandPalette.commands.saveDescription'),
+      shortcut: formatShortcut({ key: 's', ctrlOrMeta: true }),
+      icon: Save,
+      action: handleSave,
+      category: t('commandPalette.categories.content'),
+      context: 'editor' as const,
+      enabled: !!contentId && !!editor,
+    },
+    {
+      id: 'editor-generate',
+      label: t('commandPalette.commands.generate'),
+      description: t('commandPalette.commands.generateDescription'),
+      shortcut: formatShortcut({ key: 'g', ctrlOrMeta: true }),
+      icon: Sparkles,
+      action: () => setSidebarTab('ai'),
+      category: t('commandPalette.categories.ai'),
+      context: 'editor' as const,
+      enabled: !!content && !isGenerating,
+    },
+    {
+      id: 'editor-submit',
+      label: t('commandPalette.commands.submit'),
+      description: t('commandPalette.commands.submitDescription'),
+      shortcut: formatShortcut({ key: 'enter', ctrlOrMeta: true }),
+      icon: SendHorizonal,
+      action: async () => {
+        if (!contentId || content?.status !== 'draft') return;
+        try {
+          await updateStatusMutation.mutateAsync({
+            contentItemId: contentId,
+            status: 'submitted',
+          });
+          toast.success(t('content.submittedForReview'));
+        } catch {
+          toast.error(t('errors.generic'));
+        }
+      },
+      category: t('commandPalette.categories.content'),
+      context: 'editor' as const,
+      enabled: content?.status === 'draft',
+    },
+  ], [t, handleSave, contentId, editor, content, isGenerating, updateStatusMutation]);
+
+  // Register editor commands
+  useEffect(() => {
+    registerCommands(editorCommands);
+    return () => {
+      editorCommands.forEach(cmd => unregisterCommand(cmd.id));
+    };
+  }, [editorCommands, registerCommands, unregisterCommand]);
+
+  // Register keyboard shortcuts for editor
+  useKeyboardShortcuts([
+    {
+      key: 's',
+      ctrlOrMeta: true,
+      handler: handleSave,
+      enabled: !!contentId && !!editor,
+    },
+    {
+      key: 'g',
+      ctrlOrMeta: true,
+      handler: () => setSidebarTab('ai'),
+      enabled: !!content && !isGenerating,
+    },
+    {
+      key: 'Enter',
+      ctrlOrMeta: true,
+      handler: async () => {
+        if (!contentId || content?.status !== 'draft') return;
+        try {
+          await updateStatusMutation.mutateAsync({
+            contentItemId: contentId,
+            status: 'submitted',
+          });
+          toast.success(t('content.submittedForReview'));
+        } catch {
+          toast.error(t('errors.generic'));
+        }
+      },
+      enabled: content?.status === 'draft',
+    },
+  ]);
 
   // Loading state
   if (contentLoading) {
@@ -531,8 +662,15 @@ export function ContentEditorPage() {
       {/* Main content area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Editor */}
-        <div className="flex-1 overflow-y-auto">
+        <div ref={editorContainerRef} className="flex-1 overflow-y-auto">
           <EditorContent editor={editor} />
+
+          {/* Compliance Tooltip for inline issue highlighting */}
+          <ComplianceTooltip
+            editorElement={editorContainerRef.current}
+            onAcceptSuggestion={acceptComplianceSuggestion}
+            onDismissIssue={dismissComplianceIssue}
+          />
         </div>
 
         {/* Settings sidebar with tabs */}
@@ -581,6 +719,7 @@ export function ContentEditorPage() {
                   }
                 }}
                 onAcceptSuggestion={handleAcceptSuggestion}
+                onViewInContext={handleViewInContext}
               />
             </TabsContent>
           </Tabs>

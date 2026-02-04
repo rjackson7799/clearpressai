@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useContentItems, useDeleteContentItem } from '@/hooks/use-content';
+import { useContentItems, useDeleteContentItem, useDuplicateContentItem } from '@/hooks/use-content';
 import type { ContentType, ContentStatus, ContentFilters } from '@/types';
 import { Plus, Search, FileText } from 'lucide-react';
 import { toast } from 'sonner';
@@ -55,11 +55,16 @@ export function ContentItemList({ projectId, onEditContent }: ContentItemListPro
   });
 
   const deleteContentMutation = useDeleteContentItem();
+  const duplicateContentMutation = useDuplicateContentItem();
 
   const handleDelete = (contentId: string) => {
     if (window.confirm(t('editor.deleteConfirm'))) {
       deleteContentMutation.mutate({ contentItemId: contentId, projectId });
     }
+  };
+
+  const handleDuplicate = (contentId: string) => {
+    duplicateContentMutation.mutate(contentId);
   };
 
   const handleContentCreated = (contentId: string) => {
@@ -161,6 +166,7 @@ export function ContentItemList({ projectId, onEditContent }: ContentItemListPro
               content={content}
               onEdit={onEditContent}
               onDelete={handleDelete}
+              onDuplicate={handleDuplicate}
               isLocked={!!content.locked_by}
               lockedByName={(content as unknown as { locked_by_user?: { name: string } }).locked_by_user?.name}
             />
