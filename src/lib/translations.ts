@@ -494,6 +494,9 @@ export const translations = {
         inviteFailed: '招待の送信に失敗しました',
         alreadyMember: 'このユーザーは既にメンバーです',
         alreadyInvited: 'このユーザーは既に招待されています',
+        rateLimited: 'メール送信の制限に達しました。数分後に再度お試しください',
+        emailDeliveryFailed: '招待メールの配信に失敗しました。メールアドレスを確認してください',
+        networkError: 'ネットワークエラーが発生しました。接続を確認してください',
       },
     },
     editor: {
@@ -740,6 +743,16 @@ export const translations = {
       unauthorized: '認証が必要です',
       forbidden: 'アクセス権限がありません',
       not_found: '見つかりませんでした',
+      boundary: {
+        title: 'エラーが発生しました',
+        description: '予期しないエラーが発生しました。再読み込みをお試しください。',
+        retry: '再試行',
+        reload: '再読み込み',
+        goToDashboard: 'ダッシュボードへ',
+        details: 'エラー詳細',
+        routeError: 'このページでエラーが発生しました',
+        routeDescription: '問題が発生しました。再試行するか、ダッシュボードに戻ってください。',
+      },
     },
     realtime: {
       connected: '接続中',
@@ -1645,6 +1658,9 @@ export const translations = {
         inviteFailed: 'Failed to send invitation',
         alreadyMember: 'This user is already a member',
         alreadyInvited: 'This user has already been invited',
+        rateLimited: 'Email rate limit reached. Please try again in a few minutes',
+        emailDeliveryFailed: 'Failed to deliver invitation email. Please verify the email address',
+        networkError: 'A network error occurred. Please check your connection',
       },
     },
     editor: {
@@ -1891,6 +1907,16 @@ export const translations = {
       unauthorized: 'Authentication required',
       forbidden: 'Access denied',
       not_found: 'Not found',
+      boundary: {
+        title: 'An error occurred',
+        description: 'An unexpected error occurred. Please try reloading the page.',
+        retry: 'Retry',
+        reload: 'Reload',
+        goToDashboard: 'Go to Dashboard',
+        details: 'Error Details',
+        routeError: 'An error occurred on this page',
+        routeDescription: 'Something went wrong. Please retry or go back to the dashboard.',
+      },
     },
     realtime: {
       connected: 'Connected',

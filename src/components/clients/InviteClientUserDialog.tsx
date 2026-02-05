@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useInviteUser } from '@/hooks/use-users';
+import { InviteError } from '@/services/users';
 import { useQueryClient } from '@tanstack/react-query';
 import { clientKeys } from '@/hooks/use-clients';
 import {
@@ -21,7 +22,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 
 // Zod schema for form validation
 const inviteClientUserSchema = z.object({
@@ -60,6 +61,23 @@ export function InviteClientUserDialog({
       name: '',
     },
   });
+
+  // Get user-friendly error message for inline display
+  const getErrorMessage = (): string | null => {
+    if (!inviteMutation.error) return null;
+    const error = inviteMutation.error;
+    if (error instanceof InviteError) {
+      switch (error.code) {
+        case 'ALREADY_MEMBER': return t('team.errors.alreadyMember');
+        case 'ALREADY_INVITED': return t('team.errors.alreadyInvited');
+        case 'RATE_LIMITED': return t('team.errors.rateLimited');
+        case 'EMAIL_DELIVERY_FAILED': return t('team.errors.emailDeliveryFailed');
+        case 'NETWORK_ERROR': return t('team.errors.networkError');
+        default: return t('team.errors.inviteFailed');
+      }
+    }
+    return t('team.errors.inviteFailed');
+  };
 
   const onSubmit = async (data: InviteClientUserFormData) => {
     inviteMutation.mutate(
@@ -138,6 +156,13 @@ export function InviteClientUserDialog({
               />
             </div>
           </div>
+
+          {getErrorMessage() && (
+            <div className="flex items-start gap-2 rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+              <span>{getErrorMessage()}</span>
+            </div>
+          )}
 
           <DialogFooter>
             <Button

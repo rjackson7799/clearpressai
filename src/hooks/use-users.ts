@@ -90,6 +90,15 @@ export function useInviteUser() {
           case 'ALREADY_INVITED':
             toast.error(t('team.errors.alreadyInvited'));
             break;
+          case 'RATE_LIMITED':
+            toast.error(t('team.errors.rateLimited'));
+            break;
+          case 'EMAIL_DELIVERY_FAILED':
+            toast.error(t('team.errors.emailDeliveryFailed'));
+            break;
+          case 'NETWORK_ERROR':
+            toast.error(t('team.errors.networkError'));
+            break;
           default:
             toast.error(t('team.errors.inviteFailed'));
         }

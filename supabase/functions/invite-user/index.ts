@@ -204,6 +204,31 @@ serve(async (req: Request): Promise<Response> => {
         };
       }
 
+      // Handle rate limiting from Supabase's built-in email service
+      const lowerMsg = (inviteError.message ?? '').toLowerCase();
+      if (
+        lowerMsg.includes('rate limit') ||
+        lowerMsg.includes('too many') ||
+        lowerMsg.includes('exceeded') ||
+        lowerMsg.includes('429') ||
+        (inviteError as { status?: number }).status === 429
+      ) {
+        throw {
+          code: 'RATE_LIMITED',
+          message: 'Email rate limit reached. Please try again in a few minutes.',
+        };
+      }
+
+      // Handle email delivery failures
+      if (
+        lowerMsg.includes('email') && (lowerMsg.includes('deliver') || lowerMsg.includes('send') || lowerMsg.includes('fail'))
+      ) {
+        throw {
+          code: 'EMAIL_DELIVERY_FAILED',
+          message: 'Failed to deliver invitation email.',
+        };
+      }
+
       throw {
         code: 'INVITE_FAILED',
         message: inviteError.message || 'Failed to send invitation',
@@ -235,6 +260,7 @@ serve(async (req: Request): Promise<Response> => {
       err.code === 'ALREADY_INVITED'
     )
       status = 400;
+    else if (err.code === 'RATE_LIMITED') status = 429;
     else if (err.code === 'METHOD_NOT_ALLOWED') status = 405;
 
     const response: InviteResponse = {

@@ -8,6 +8,7 @@
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { RouteErrorBoundary } from '@/components/common/ErrorBoundary';
 import { useAuth } from '@/contexts/AuthContext';
 
 // Loading fallback component
@@ -19,12 +20,14 @@ function PageLoader() {
   );
 }
 
-// Lazy wrapper for consistent suspense handling
+// Lazy wrapper with error boundary and suspense handling
 function LazyPage({ component: Component }: { component: React.ComponentType }) {
   return (
-    <Suspense fallback={<PageLoader />}>
-      <Component />
-    </Suspense>
+    <RouteErrorBoundary>
+      <Suspense fallback={<PageLoader />}>
+        <Component />
+      </Suspense>
+    </RouteErrorBoundary>
   );
 }
 
