@@ -381,6 +381,7 @@ function ContentItemCardWithProject({
         isLocked={!!content.locked_by}
         lockedByName={(content as unknown as { locked_by_user?: { name: string } }).locked_by_user?.name}
         projectName={content.project?.name}
+        clientName={content.project?.client?.name}
       />
     </div>
   );

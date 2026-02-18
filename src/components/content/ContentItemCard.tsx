@@ -17,6 +17,7 @@ import {
   Clock,
   FileText,
   FolderOpen,
+  Building2,
   Copy,
 } from 'lucide-react';
 import {
@@ -38,6 +39,8 @@ interface ContentItemCardProps {
   lockedByName?: string;
   /** Project name to display when showing content across projects */
   projectName?: string;
+  /** Client name to display when showing content across projects */
+  clientName?: string;
 }
 
 export function ContentItemCard({
@@ -48,6 +51,7 @@ export function ContentItemCard({
   isLocked = false,
   lockedByName,
   projectName,
+  clientName,
 }: ContentItemCardProps) {
   const { t, language } = useLanguage();
   const dateLocale = language === 'ja' ? ja : enUS;
@@ -139,11 +143,21 @@ export function ContentItemCard({
           )}
         </div>
 
-        {/* Project name (when showing cross-project content) */}
-        {projectName && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <FolderOpen className="h-3 w-3" />
-            <span className="truncate">{projectName}</span>
+        {/* Client and project name (when showing cross-project content) */}
+        {(clientName || projectName) && (
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            {clientName && (
+              <div className="flex items-center gap-1 min-w-0">
+                <Building2 className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">{clientName}</span>
+              </div>
+            )}
+            {projectName && (
+              <div className="flex items-center gap-1 min-w-0">
+                <FolderOpen className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">{projectName}</span>
+              </div>
+            )}
           </div>
         )}
 

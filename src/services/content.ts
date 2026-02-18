@@ -397,6 +397,7 @@ export interface ContentItemWithProject extends ContentItem {
   project?: {
     id: string;
     name: string;
+    client?: { id: string; name: string };
   };
 }
 
@@ -415,7 +416,7 @@ export async function fetchAllContentItems(
     .from('content_items')
     .select(`
       *,
-      project:projects!inner(id, name, organization_id, client_id),
+      project:projects!inner(id, name, organization_id, client_id, client:clients(id, name)),
       current_version:content_versions!content_items_current_version_fkey(
         id,
         version_number,
@@ -467,7 +468,7 @@ export async function fetchAllContentItems(
   return {
     data: (data ?? []).map((row) => ({
       ...dbContentItemToContentItem(row as unknown as DbContentItem),
-      project: row.project as { id: string; name: string },
+      project: row.project as { id: string; name: string; client?: { id: string; name: string } },
     })),
     total: count ?? 0,
     page,
