@@ -21,6 +21,7 @@ import { ComplianceScoreDisplay } from './ComplianceScoreDisplay';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useState } from 'react';
 import type { StructuredContent } from '@/types';
+import { structuredToPlainText } from '@/lib/content-utils';
 
 interface ContentPreviewProps {
   open: boolean;
@@ -51,7 +52,7 @@ export function ContentPreview({
   if (!content) return null;
 
   // Convert structured content to plain text for display
-  const plainText = content.plain_text || structuredToPlain(content);
+  const plainText = content.plain_text || structuredToPlainText(content);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(plainText);
@@ -237,33 +238,3 @@ export function ContentPreview({
   );
 }
 
-// Helper to convert structured content to plain text
-function structuredToPlain(content: StructuredContent): string {
-  const parts: string[] = [];
-
-  if (content.headline) parts.push(content.headline);
-  if (content.subheadline) parts.push(content.subheadline);
-  if (content.title) parts.push(content.title);
-  if (content.dateline) parts.push(content.dateline);
-  if (content.lead) parts.push(content.lead);
-  if (content.introduction) parts.push(content.introduction);
-  if (content.body) parts.push(...content.body);
-  if (content.sections) {
-    content.sections.forEach((s) => {
-      parts.push(s.heading);
-      parts.push(s.content);
-    });
-  }
-  if (content.quotes) {
-    content.quotes.forEach((q) => {
-      parts.push(`「${q.text}」— ${q.attribution}`);
-    });
-  }
-  if (content.conclusion) parts.push(content.conclusion);
-  if (content.cta) parts.push(content.cta);
-  if (content.isi) parts.push(content.isi);
-  if (content.boilerplate) parts.push(content.boilerplate);
-  if (content.contact) parts.push(content.contact);
-
-  return parts.join('\n\n');
-}

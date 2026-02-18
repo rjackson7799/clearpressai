@@ -16,3 +16,6 @@ export type { ComplianceMarkAttributes } from './extensions/compliance-mark';
 
 export { ComplianceTooltip } from './ComplianceTooltip';
 export type { ComplianceIssueData } from './ComplianceTooltip';
+
+export { StructuredContentEditor } from './StructuredContentEditor';
+export { ContentBlock } from './ContentBlock';

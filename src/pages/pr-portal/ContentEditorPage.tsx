@@ -56,7 +56,7 @@ import {
   useDebouncedComplianceCheck,
 } from '@/hooks/use-ai';
 import { useContentRealtime } from '@/hooks/use-content-realtime';
-import { ArrowLeft, Save, Cloud, CloudOff, Loader2, Settings, Sparkles, FileDown, SendHorizonal } from 'lucide-react';
+import { ArrowLeft, Save, Cloud, CloudOff, Loader2, Settings, Sparkles, FileDown, SendHorizonal, LayoutList, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useDebouncedCallback } from 'use-debounce';
@@ -66,6 +66,8 @@ import type { StructuredContent, ContentType } from '@/types';
 import type { ExportOptions } from '@/types/export';
 import { ExportDialog } from '@/components/export';
 import { exportContentFromEditor } from '@/services/export';
+import { structuredContentToHtml, hasStructuredFields, structuredToPlainText } from '@/lib/content-utils';
+import { StructuredContentEditor } from '@/components/editor/StructuredContentEditor';
 
 type SaveStatus = 'saved' | 'saving' | 'unsaved' | 'error';
 
@@ -131,7 +133,14 @@ export function ContentEditorPage() {
   const [generatedComplianceScore, setGeneratedComplianceScore] = useState(0);
   const hasLock = useRef(false);
   const lastSavedContent = useRef('');
+  const initialLoadDone = useRef(false);
   const editorContainerRef = useRef<HTMLDivElement>(null);
+
+  // Structured editor state
+  const [editorMode, setEditorMode] = useState<'structured' | 'richtext'>('richtext');
+  const [structuredData, setStructuredData] = useState<StructuredContent>({});
+  const structuredDataRef = useRef<StructuredContent>({});
+  const lastSavedStructured = useRef<string>('');
 
   // Initialize editor
   const editor = useEditor({
@@ -190,17 +199,35 @@ export function ContentEditorPage() {
     scrollToIssue,
   } = useComplianceMarks({ editor });
 
-  // Load content into editor
+  // Load content into editor (only on initial load, not after auto-save refetch)
   useEffect(() => {
-    if (content && editor) {
+    if (content && editor && !initialLoadDone.current) {
       setTitle(content.title);
-      const htmlContent = content.current_version?.content?.html ??
-                          content.current_version?.content?.plain_text ??
-                          '';
-      editor.commands.setContent(htmlContent);
-      lastSavedContent.current = editor.getHTML();
+      const versionContent = content.current_version?.content;
+
+      if (hasStructuredFields(versionContent)) {
+        // Content has structured fields — use structured mode
+        setEditorMode('structured');
+        const data = versionContent || {};
+        setStructuredData(data);
+        structuredDataRef.current = data;
+        lastSavedStructured.current = JSON.stringify(data);
+      } else {
+        // HTML or plain text content — use rich text mode
+        setEditorMode('richtext');
+        const htmlContent = structuredContentToHtml(versionContent);
+        editor.commands.setContent(htmlContent);
+        lastSavedContent.current = editor.getHTML();
+      }
+
+      initialLoadDone.current = true;
     }
   }, [content, editor]);
+
+  // Reset initialLoadDone when navigating to a different content item
+  useEffect(() => {
+    initialLoadDone.current = false;
+  }, [contentId]);
 
   // Store apply function in ref to avoid dependency issues
   const applyComplianceMarksRef = useRef(applyComplianceMarks);
@@ -263,11 +290,53 @@ export function ContentEditorPage() {
     2000 // 2 second debounce
   );
 
+  // Auto-save for structured mode
+  const debouncedStructuredAutoSave = useDebouncedCallback(
+    async (data: StructuredContent) => {
+      if (!contentId || !user?.id) return;
+
+      const serialized = JSON.stringify(data);
+      if (serialized === lastSavedStructured.current) return;
+
+      setSaveStatus('saving');
+      try {
+        const plainText = structuredToPlainText(data);
+        await createVersionMutation.mutateAsync({
+          contentItemId: contentId,
+          data: {
+            content: { ...data, plain_text: plainText },
+          },
+        });
+        lastSavedStructured.current = serialized;
+        setSaveStatus('saved');
+      } catch {
+        setSaveStatus('error');
+      }
+    },
+    2000
+  );
+
+  // Handle structured content changes
+  const handleStructuredChange = useCallback(
+    (data: StructuredContent) => {
+      setStructuredData(data);
+      structuredDataRef.current = data;
+      setSaveStatus('unsaved');
+      debouncedStructuredAutoSave(data);
+
+      // Trigger compliance check on structured content
+      const plainText = structuredToPlainText(data);
+      if (plainText.length >= 50) {
+        checkCompliance(plainText);
+      }
+    },
+    [debouncedStructuredAutoSave, checkCompliance]
+  );
+
   // Manual save
   const handleSave = useCallback(async () => {
-    if (!contentId || !user?.id || !editor) return;
+    if (!contentId || !user?.id) return;
 
-    const html = editor.getHTML();
     setSaveStatus('saving');
 
     try {
@@ -279,25 +348,39 @@ export function ContentEditorPage() {
         });
       }
 
-      // Create new version
-      await createVersionMutation.mutateAsync({
-        contentItemId: contentId,
-        data: {
-          content: {
-            html,
-            plain_text: editor.getText(),
+      if (editorMode === 'structured') {
+        // Structured mode save
+        const plainText = structuredToPlainText(structuredDataRef.current);
+        await createVersionMutation.mutateAsync({
+          contentItemId: contentId,
+          data: {
+            content: { ...structuredDataRef.current, plain_text: plainText },
           },
-        },
-      });
+        });
+        lastSavedStructured.current = JSON.stringify(structuredDataRef.current);
+      } else {
+        // Rich text mode save
+        if (!editor) return;
+        const html = editor.getHTML();
+        await createVersionMutation.mutateAsync({
+          contentItemId: contentId,
+          data: {
+            content: {
+              html,
+              plain_text: editor.getText(),
+            },
+          },
+        });
+        lastSavedContent.current = html;
+      }
 
-      lastSavedContent.current = html;
       setSaveStatus('saved');
       toast.success(t('editor.saved'));
     } catch {
       setSaveStatus('error');
       toast.error(t('editor.saveFailed'));
     }
-  }, [contentId, user?.id, editor, title, content?.title, updateContentMutation, createVersionMutation, t]);
+  }, [contentId, user?.id, editor, title, content?.title, editorMode, updateContentMutation, createVersionMutation, t]);
 
   // Insert ISI block
   const handleInsertISI = useCallback((isiContent: string) => {
@@ -325,26 +408,26 @@ export function ContentEditorPage() {
   // Version selection
   const handleVersionSelect = useCallback((versionId: string) => {
     const version = versions.find((v) => v.id === versionId);
-    if (version && editor) {
-      const html = version.content?.html ?? version.content?.plain_text ?? '';
+    if (!version) return;
+
+    if (editorMode === 'structured' && hasStructuredFields(version.content)) {
+      // Load structured fields directly
+      setStructuredData(version.content);
+      structuredDataRef.current = version.content;
+      setSaveStatus('unsaved');
+    } else if (editor) {
+      // Convert to HTML for Tiptap
+      const html = structuredContentToHtml(version.content);
       editor.commands.setContent(html);
       setSaveStatus('unsaved');
     }
-  }, [versions, editor]);
+  }, [versions, editor, editorMode]);
 
-  // Version restored - reload the latest content
+  // Version restored - allow re-loading content from the refetched data
   const handleVersionRestored = useCallback(() => {
-    // The version hooks will auto-refresh, and we need to reload the editor
-    // with the new current version content
-    if (content && editor) {
-      const htmlContent = content.current_version?.content?.html ??
-                          content.current_version?.content?.plain_text ??
-                          '';
-      editor.commands.setContent(htmlContent);
-      lastSavedContent.current = editor.getHTML();
-      setSaveStatus('saved');
-    }
-  }, [content, editor]);
+    // Reset initialLoadDone so the next content refetch reloads the editor
+    initialLoadDone.current = false;
+  }, []);
 
   // AI Content Generation
   const handleGenerate = useCallback(async (settings: GenerationSettings) => {
@@ -376,51 +459,26 @@ export function ContentEditorPage() {
 
   // Accept generated content
   const handleAcceptGenerated = useCallback(() => {
-    if (!editor || !generatedContent) return;
+    if (!generatedContent) return;
 
-    // Convert structured content to HTML
-    let html = '';
-    if (generatedContent.headline) {
-      html += `<h1>${generatedContent.headline}</h1>`;
-    }
-    if (generatedContent.subheadline) {
-      html += `<h2>${generatedContent.subheadline}</h2>`;
-    }
-    if (generatedContent.dateline) {
-      html += `<p><em>${generatedContent.dateline}</em></p>`;
-    }
-    if (generatedContent.lead) {
-      html += `<p><strong>${generatedContent.lead}</strong></p>`;
-    }
-    if (generatedContent.body) {
-      html += generatedContent.body.map(p => `<p>${p}</p>`).join('');
-    }
-    if (generatedContent.quotes) {
-      generatedContent.quotes.forEach(q => {
-        html += `<blockquote><p>「${q.text}」</p><footer>— ${q.attribution}</footer></blockquote>`;
-      });
-    }
-    if (generatedContent.isi) {
-      html += `<div class="isi-block border-l-4 border-amber-500 pl-4 my-4 bg-amber-50 p-4 rounded">
-        <p class="font-bold text-amber-800 mb-2">重要な安全性情報</p>
-        <p>${generatedContent.isi}</p>
-      </div>`;
-    }
-    if (generatedContent.boilerplate) {
-      html += `<div class="boilerplate-block border-l-4 border-blue-500 pl-4 my-4 bg-blue-50 p-4 rounded">
-        <p>${generatedContent.boilerplate}</p>
-      </div>`;
-    }
-    if (generatedContent.contact) {
-      html += `<p><strong>お問い合わせ先:</strong> ${generatedContent.contact}</p>`;
+    if (hasStructuredFields(generatedContent)) {
+      // AI content has structured fields — switch to structured mode
+      setEditorMode('structured');
+      setStructuredData(generatedContent);
+      structuredDataRef.current = generatedContent;
+      setSaveStatus('unsaved');
+      debouncedStructuredAutoSave(generatedContent);
+    } else if (editor) {
+      // Fallback: load as HTML into Tiptap
+      const html = structuredContentToHtml(generatedContent);
+      editor.commands.setContent(html);
+      setSaveStatus('unsaved');
     }
 
-    editor.commands.setContent(html);
-    setSaveStatus('unsaved');
     setShowPreview(false);
     setGeneratedContent(null);
     toast.success(t('ai.accept'));
-  }, [editor, generatedContent, t]);
+  }, [editor, generatedContent, t, debouncedStructuredAutoSave]);
 
   // Reject generated content
   const handleRejectGenerated = useCallback(() => {
@@ -430,21 +488,33 @@ export function ContentEditorPage() {
 
   // Export content
   const handleExport = useCallback(async (options: ExportOptions) => {
-    if (!editor || !content) return;
+    if (!content) return;
+
+    let exportHtml: string;
+    let exportText: string;
+
+    if (editorMode === 'structured') {
+      exportHtml = structuredContentToHtml(structuredDataRef.current);
+      exportText = structuredToPlainText(structuredDataRef.current);
+    } else {
+      if (!editor) return;
+      exportHtml = editor.getHTML();
+      exportText = editor.getText();
+    }
 
     setIsExporting(true);
     try {
       await exportContentFromEditor(
         title || content.title,
         content.type as ContentType,
-        editor.getHTML(),
-        editor.getText(),
+        exportHtml,
+        exportText,
         options,
         {
           projectName: project?.name,
           clientName: project?.client?.name,
           versionNumber: content.current_version?.version_number ?? 1,
-          wordCount: content.current_version?.word_count ?? editor.getText().split(/\s+/).length,
+          wordCount: content.current_version?.word_count ?? exportText.split(/\s+/).length,
           complianceScore: complianceResult?.score,
         }
       );
@@ -456,31 +526,62 @@ export function ContentEditorPage() {
     } finally {
       setIsExporting(false);
     }
-  }, [editor, content, title, project, complianceResult, t]);
+  }, [editor, content, title, project, complianceResult, editorMode, t]);
 
   // Accept compliance suggestion (from sidebar panel)
-  const handleAcceptSuggestion = useCallback((issue: { suggestion?: string; position?: { start: number; end: number } }) => {
+  const handleAcceptSuggestion = useCallback((issue: { message: string; suggestion?: string; position?: { start: number; end: number } }) => {
     if (!editor || !issue.suggestion || !issue.position) return;
 
-    const text = editor.getText();
-    const beforeText = text.substring(issue.position.start, issue.position.end);
-
-    // Replace the text at the position
-    const content = editor.getHTML();
-    const newContent = content.replace(beforeText, issue.suggestion);
-    editor.commands.setContent(newContent);
+    // Generate the same ID format used by the compliance marks hook
+    const issueId = `${issue.position.start}-${issue.position.end}-${issue.message.slice(0, 20)}`;
+    acceptComplianceSuggestion(issueId, issue.suggestion);
     setSaveStatus('unsaved');
     toast.success(t('ai.acceptSuggestion'));
-  }, [editor, t]);
+  }, [editor, acceptComplianceSuggestion, t]);
 
   // View compliance issue in context (scroll to and highlight)
-  const handleViewInContext = useCallback((issue: { position?: { start: number; end: number } }) => {
+  const handleViewInContext = useCallback((issue: { message: string; position?: { start: number; end: number } }) => {
     if (!issue.position) return;
 
-    // Generate the same ID format used by the marks hook
-    const issueId = `${issue.position.start}-${issue.position.end}-`;
+    // Generate the same ID format used by the compliance marks hook
+    const issueId = `${issue.position.start}-${issue.position.end}-${issue.message.slice(0, 20)}`;
     scrollToIssue(issueId);
   }, [scrollToIssue]);
+
+  // Mode switching handler
+  const handleModeSwitch = useCallback(
+    (mode: 'structured' | 'richtext') => {
+      if (mode === editorMode) return;
+
+      if (mode === 'richtext') {
+        // Structured → Rich Text: convert structured content to HTML
+        toast.info(t('editor.switchToRichTextWarning'));
+        const html = structuredContentToHtml(structuredDataRef.current);
+        if (editor) {
+          editor.commands.setContent(html);
+          lastSavedContent.current = '';
+          setSaveStatus('unsaved');
+        }
+      } else {
+        // Rich Text → Structured: warn user, load version's structured fields if available
+        toast.info(t('editor.switchToStructuredWarning'));
+        const versionContent = content?.current_version?.content;
+        if (hasStructuredFields(versionContent)) {
+          setStructuredData(versionContent!);
+          structuredDataRef.current = versionContent!;
+        } else {
+          // Start with empty structured fields for this content type
+          setStructuredData({});
+          structuredDataRef.current = {};
+        }
+        lastSavedStructured.current = '';
+        setSaveStatus('unsaved');
+      }
+
+      setEditorMode(mode);
+    },
+    [editorMode, editor, content, t]
+  );
 
   // Command palette context
   const { registerCommands, unregisterCommand, setActiveContext } = useCommandPalette();
@@ -656,27 +757,66 @@ export function ContentEditorPage() {
 
       {/* Toolbar */}
       <div className="border-b flex items-center justify-between">
-        <EditorToolbar editor={editor} />
-        <div className="px-2">
-          <ISIBlockInserter
-            onInsertISI={handleInsertISI}
-            onInsertBoilerplate={handleInsertBoilerplate}
-          />
+        <div className="flex items-center">
+          {/* Mode toggle */}
+          <div className="flex items-center border-r px-2">
+            <Button
+              variant={editorMode === 'structured' ? 'default' : 'ghost'}
+              size="sm"
+              className="gap-1.5 h-8"
+              onClick={() => handleModeSwitch('structured')}
+            >
+              <LayoutList className="h-3.5 w-3.5" />
+              {t('editor.structuredMode')}
+            </Button>
+            <Button
+              variant={editorMode === 'richtext' ? 'default' : 'ghost'}
+              size="sm"
+              className="gap-1.5 h-8"
+              onClick={() => handleModeSwitch('richtext')}
+            >
+              <FileText className="h-3.5 w-3.5" />
+              {t('editor.richTextMode')}
+            </Button>
+          </div>
+
+          {/* Rich text toolbar (only in richtext mode) */}
+          {editorMode === 'richtext' && <EditorToolbar editor={editor} />}
         </div>
+
+        {/* ISI inserter (only in richtext mode) */}
+        {editorMode === 'richtext' && (
+          <div className="px-2">
+            <ISIBlockInserter
+              onInsertISI={handleInsertISI}
+              onInsertBoilerplate={handleInsertBoilerplate}
+            />
+          </div>
+        )}
       </div>
 
       {/* Main content area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Editor */}
         <div ref={editorContainerRef} className="flex-1 overflow-y-auto">
-          <EditorContent editor={editor} />
+          {editorMode === 'structured' ? (
+            <StructuredContentEditor
+              contentType={(content.type as ContentType) || 'press_release'}
+              content={structuredData}
+              onChange={handleStructuredChange}
+            />
+          ) : (
+            <>
+              <EditorContent editor={editor} />
 
-          {/* Compliance Tooltip for inline issue highlighting */}
-          <ComplianceTooltip
-            editorElement={editorContainerRef.current}
-            onAcceptSuggestion={acceptComplianceSuggestion}
-            onDismissIssue={dismissComplianceIssue}
-          />
+              {/* Compliance Tooltip for inline issue highlighting */}
+              <ComplianceTooltip
+                editorElement={editorContainerRef.current}
+                onAcceptSuggestion={acceptComplianceSuggestion}
+                onDismissIssue={dismissComplianceIssue}
+              />
+            </>
+          )}
         </div>
 
         {/* Settings sidebar with tabs */}
