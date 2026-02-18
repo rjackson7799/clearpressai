@@ -96,6 +96,7 @@ export function LoginPage() {
                 id="email"
                 type="email"
                 placeholder="name@company.com"
+                autoComplete="email"
                 {...register('email')}
                 aria-invalid={!!errors.email}
               />
@@ -116,6 +117,7 @@ export function LoginPage() {
               <Input
                 id="password"
                 type="password"
+                autoComplete="current-password"
                 {...register('password')}
                 aria-invalid={!!errors.password}
               />

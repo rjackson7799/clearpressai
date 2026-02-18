@@ -14,7 +14,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -71,6 +71,7 @@ type SaveStatus = 'saved' | 'saving' | 'unsaved' | 'error';
 
 export function ContentEditorPage() {
   const { projectId, contentId } = useParams<{ projectId: string; contentId: string }>();
+  const navigate = useNavigate();
   const { t, language } = useLanguage();
   const { user } = useAuth();
 
@@ -201,12 +202,19 @@ export function ContentEditorPage() {
     }
   }, [content, editor]);
 
+  // Store apply function in ref to avoid dependency issues
+  const applyComplianceMarksRef = useRef(applyComplianceMarks);
+  useEffect(() => {
+    applyComplianceMarksRef.current = applyComplianceMarks;
+  }, [applyComplianceMarks]);
+
   // Apply compliance marks when results change
+  // Using ref to avoid infinite loop when applyComplianceMarks changes
   useEffect(() => {
     if (complianceResult && editor) {
-      applyComplianceMarks(complianceResult);
+      applyComplianceMarksRef.current(complianceResult);
     }
-  }, [complianceResult, editor, applyComplianceMarks]);
+  }, [complianceResult, editor]);
 
   // Acquire lock on mount
   useEffect(() => {
@@ -611,10 +619,8 @@ export function ContentEditorPage() {
       {/* Header */}
       <div className="border-b px-4 py-3 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
-          <Button variant="ghost" size="icon" asChild>
-            <Link to={`/pr/projects/${projectId}`}>
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
+          <Button variant="ghost" size="icon" onClick={() => navigate(`/pr/projects/${projectId}`)}>
+            <ArrowLeft className="h-4 w-4" />
           </Button>
           <Input
             value={title}

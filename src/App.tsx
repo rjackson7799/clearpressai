@@ -33,8 +33,10 @@ function App() {
             <CommandPaletteProvider>
               <RouterProvider router={router} />
               <Toaster position="top-right" />
-              <OfflineIndicator />
-              <PWAUpdatePrompt />
+              <div id="pwa-container">
+                <OfflineIndicator />
+                <PWAUpdatePrompt />
+              </div>
               {DevDiagnostics && (
                 <Suspense fallback={null}>
                   <DevDiagnostics />

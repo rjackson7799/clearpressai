@@ -213,6 +213,15 @@ export function useComplianceMarks({ editor }: UseComplianceMarksOptions) {
   // Track dismissed issues (session-scoped)
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
 
+  // Ref to access dismissedIds in callbacks without causing re-creation
+  // This breaks the circular dependency that causes infinite re-renders
+  const dismissedIdsRef = useRef<Set<string>>(dismissedIds);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    dismissedIdsRef.current = dismissedIds;
+  }, [dismissedIds]);
+
   // Store current issues for reference
   const issuesRef = useRef<ComplianceIssue[]>([]);
 
@@ -245,9 +254,10 @@ export function useComplianceMarks({ editor }: UseComplianceMarksOptions) {
       const issues = normalizeIssues(result);
       issuesRef.current = issues;
 
-      applyMarksToEditor(editor, issues, dismissedIds);
+      // Use ref to access current dismissedIds without causing callback recreation
+      applyMarksToEditor(editor, issues, dismissedIdsRef.current);
     },
-    [editor, dismissedIds, normalizeIssues]
+    [editor, normalizeIssues]
   );
 
   /**

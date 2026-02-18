@@ -82,7 +82,7 @@ export function PRSidebar({ isCollapsed, onToggleCollapse }: PRSidebarProps) {
           <NavLink
             key={item.key}
             to={item.href}
-            end={item.href === '/pr'}
+            end
             className={({ isActive }) =>
               cn(
                 'flex items-center gap-3 px-3 py-2 rounded-md transition-colors',
