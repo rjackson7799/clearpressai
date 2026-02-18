@@ -13,6 +13,7 @@ import {
   ChevronDown,
   ChevronUp,
   Check,
+  Loader2,
 } from 'lucide-react';
 import type { ContentVariant, StructuredContent } from '@/types';
 import { formatTranslation } from '@/lib/translations';
@@ -24,6 +25,8 @@ interface VariantPickerProps {
   onRegenerate: () => void;
   onBackToEdit: () => void;
   isRegenerating?: boolean;
+  isSelecting?: boolean;
+  selectingVariantId?: string | null;
 }
 
 export function VariantPicker({
@@ -32,6 +35,8 @@ export function VariantPicker({
   onRegenerate,
   onBackToEdit,
   isRegenerating,
+  isSelecting = false,
+  selectingVariantId = null,
 }: VariantPickerProps) {
   const { t, language } = useLanguage();
   const [expandedVariant, setExpandedVariant] = useState<string | null>(null);
@@ -191,9 +196,16 @@ export function VariantPicker({
                     variant="default"
                     size="sm"
                     onClick={() => onSelectVariant(variant)}
+                    disabled={isSelecting}
                   >
-                    <Check className="h-4 w-4 mr-1" />
-                    {t('guidedContent.selectVariant')}
+                    {selectingVariantId === variant.id ? (
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    ) : (
+                      <Check className="h-4 w-4 mr-1" />
+                    )}
+                    {selectingVariantId === variant.id
+                      ? (t('common.loading') || '...')
+                      : t('guidedContent.selectVariant')}
                   </Button>
                 </div>
               </CardHeader>

@@ -29,6 +29,7 @@ interface CompliancePanelProps {
     message: string;
   }) => void;
   onViewInContext?: (issue: {
+    message: string;
     position?: { start: number; end: number };
   }) => void;
 }

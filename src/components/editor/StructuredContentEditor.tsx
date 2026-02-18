@@ -7,7 +7,6 @@
  */
 
 import { useCallback } from 'react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { ContentBlock } from './ContentBlock';
 import { CONTENT_TYPE_FIELDS } from '@/lib/content-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -36,7 +35,7 @@ export function StructuredContentEditor({
   );
 
   return (
-    <ScrollArea className="h-full">
+    <div className="h-full overflow-y-auto">
       <div className="max-w-3xl mx-auto px-6 py-6 space-y-6">
         {/* Content type label */}
         <div className="text-xs text-muted-foreground uppercase tracking-wider">
@@ -53,6 +52,6 @@ export function StructuredContentEditor({
           />
         ))}
       </div>
-    </ScrollArea>
+    </div>
   );
 }

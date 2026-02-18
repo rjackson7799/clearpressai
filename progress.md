@@ -1483,4 +1483,301 @@ supabase/functions/enhance-title/index.ts
 
 ---
 
-*Last Updated: 2025-02-17*
+---
+
+### 2026-02-17 - Content Format Bridge Fix (Session 30)
+
+#### Overview
+Comprehensive code review of the content system revealed a **fundamental data format mismatch** causing:
+1. AI-generated content appearing **empty** when opened in the editor
+2. Content structure being **permanently destroyed** after first manual edit
+3. Version restore loading **blank content** for AI-generated versions
+4. Auto-save causing **race conditions** that reset user edits
+
+#### Root Cause Analysis
+
+There are **two content formats** in the system, and the editor only understands one:
+
+| Format | Where Used | Fields |
+|--------|-----------|--------|
+| **StructuredContent** | AI generation, DB storage, client review (DocumentViewer), export | `headline`, `subheadline`, `lead`, `body[]`, `quotes[]`, `sections[]`, `isi`, `boilerplate`, `contact`, `title`, `introduction`, `conclusion`, `cta` |
+| **HTML/PlainText** | Tiptap editor, manual saves, auto-saves | `html`, `plain_text` |
+
+**The editor only reads** `content.html` or `content.plain_text` (ContentEditorPage.tsx:197-199).
+**The editor only writes** `{ html, plain_text }` on save (ContentEditorPage.tsx:248-255).
+**AI generation produces** StructuredContent with no `html` field.
+
+**Result**: Content IS saved correctly in the database, but the editor can't display it.
+
+#### Bugs to Fix (Category A: Content Format Bridge)
+
+| # | Bug | Location | Severity |
+|---|-----|----------|----------|
+| 1 | Editor only reads `html`/`plain_text`, misses structured content → loads empty | `ContentEditorPage.tsx:197-199` | Critical |
+| 2 | Auto-save invalidates query cache → useEffect resets editor → user loses keystrokes | `ContentEditorPage.tsx:194-203 + 242-264` | Critical |
+| 3 | `handleAcceptGenerated` manually builds HTML, duplicates logic | `ContentEditorPage.tsx:378-423` | Medium |
+| 4 | `handleVersionSelect` only reads `html`/`plain_text` | `ContentEditorPage.tsx:326-333` | High |
+| 5 | `handleVersionRestored` reads stale data, same format bug | `ContentEditorPage.tsx:336-347` | High |
+
+#### Implementation Plan
+
+**Step 1: Create `src/lib/content-utils.ts` (NEW FILE)**
+- `structuredContentToHtml(content: StructuredContent): string` — converts any StructuredContent to Tiptap-compatible HTML
+- Must handle all content types: press release, blog, social media, FAQ, internal memo, executive statement
+- Must handle content that already has `html` (pass through)
+- Must handle content that only has `plain_text` (wrap in `<p>` tags)
+- Must handle structured fields (`headline`, `body[]`, `quotes[]`, `sections[]`, etc.)
+- Must handle empty/null content (return empty string)
+- Reference: `DocumentViewer.tsx:49-188` renders same fields (our HTML equivalent)
+- Reference: `handleAcceptGenerated` (ContentEditorPage.tsx:378-423) has partial implementation
+- Reference: `structuredContentToText()` in `ai.ts:304-333` is the plain-text equivalent
+
+**Step 2: Fix content loading in ContentEditorPage**
+- Use `structuredContentToHtml()` instead of `content?.html ?? content?.plain_text ?? ''`
+- Add `initialLoadDone` ref to prevent auto-save cache invalidation from resetting editor
+
+**Step 3: Fix auto-save race condition in ContentEditorPage**
+- The `useEffect` at line 194 should only run on **initial load**, not on every refetch
+- Use `initialLoadDone` ref (from Step 2) to gate the effect
+- Stop the auto-save cycle: save → cache invalidated → content refetches → useEffect resets editor
+
+**Step 4: Fix version restore/select in ContentEditorPage**
+- `handleVersionSelect`: use `structuredContentToHtml(version.content)` instead of `version.content?.html ?? ...`
+- `handleVersionRestored`: use converter; refetch version data instead of reading stale `content`
+
+**Step 5: Fix `handleAcceptGenerated` in ContentEditorPage**
+- Replace 40+ lines of manual HTML concatenation with single call to `structuredContentToHtml(generatedContent)`
+
+#### Files to Modify
+
+| # | File | Change | Risk Level |
+|---|------|--------|------------|
+| 1 | `src/lib/content-utils.ts` | **NEW** — Create converter utility | None (new file) |
+| 2 | `src/pages/pr-portal/ContentEditorPage.tsx` | Fix loading, auto-save, version restore, accept generated | Medium (core editor) |
+
+#### Files NOT Modified (verified safe)
+
+| File | Why Safe |
+|------|----------|
+| `src/components/review/DocumentViewer.tsx` | Already handles StructuredContent correctly |
+| `src/pages/client-portal/ContentReviewPage.tsx` | Already passes StructuredContent to DocumentViewer |
+| `src/services/ai.ts` | Already returns StructuredContent correctly |
+| `src/services/content.ts` | Query/CRUD logic is format-agnostic |
+| `src/services/versions.ts` | Version save logic is correct |
+| `src/hooks/use-content.ts` | Query hooks are format-agnostic |
+| `src/hooks/use-versions.ts` | Mutation hooks are format-agnostic |
+| `src/services/export.ts` | Already handles both formats |
+| `supabase/functions/*` | Edge functions produce correct StructuredContent |
+| `src/types/index.ts` | StructuredContent type is correct |
+| `supabase/migrations/*` | DB schema is correct (JSONB column) |
+
+#### Testing Checklist
+
+**Content Loading:**
+- [ ] Guided wizard → select variant → open in editor → content displays correctly
+- [ ] Open existing content saved by editor (has `html` field) → loads correctly
+- [ ] Open AI-generated content (has structured fields, no `html`) → loads correctly
+- [ ] Open content with only `plain_text` → loads correctly
+- [ ] Open brand new content item (no version) → editor is empty (no crash)
+
+**Editing & Saving:**
+- [ ] Edit content → manual save → reload → content persists
+- [ ] Edit content → wait for auto-save → continue editing → NO content reset
+- [ ] Type continuously → auto-save fires → no disruption or content loss
+
+**Version Operations:**
+- [ ] Click version in sidebar → editor loads that version's content (structured or HTML)
+- [ ] Restore an AI-generated version → content loads correctly
+- [ ] Restore an HTML version → content loads correctly
+
+**AI Generation (in-editor):**
+- [ ] Generate → preview → accept → content appears in editor
+- [ ] Generate → reject → editor unchanged
+- [ ] Generate → accept → save → reload → content persists
+
+**Client Review (must NOT break):**
+- [ ] Client review page → DocumentViewer renders structured content correctly
+- [ ] Client approves/rejects → status updates
+
+**Export (must NOT break):**
+- [ ] Export to PDF/DOCX/TXT from editor → works
+
+#### Rollback Plan
+- All changes in 2 files (1 new, 1 modified)
+- New utility file has no side effects
+- ContentEditorPage can be reverted by reverting single file
+- No database changes, no migration changes, no API changes
+
+#### Implementation Status
+
+| Step | Status | Notes |
+|------|--------|-------|
+| Step 1: Create content-utils.ts | ✅ Complete | `structuredContentToHtml()` with all content type support, HTML escaping |
+| Step 2: Fix content loading | ✅ Complete | Uses converter + `initialLoadDone` ref |
+| Step 3: Fix auto-save race condition | ✅ Complete | `initialLoadDone` gates the useEffect; reset on contentId change |
+| Step 4: Fix version restore/select | ✅ Complete | Both handlers use converter; restore resets initialLoadDone |
+| Step 5: Fix handleAcceptGenerated | ✅ Complete | Replaced 40+ lines with single converter call |
+| Build verification | ✅ Complete | `tsc --noEmit` passes, `vite build` succeeds |
+| Testing | Pending | Manual testing needed per checklist above |
+
+#### Files Created (1)
+```
+src/lib/content-utils.ts - structuredContentToHtml() utility (156 lines)
+```
+
+#### Files Modified (1)
+```
+src/pages/pr-portal/ContentEditorPage.tsx - 5 targeted edits:
+  - Added import for structuredContentToHtml
+  - Added initialLoadDone ref
+  - Fixed content loading useEffect (lines 195-209)
+  - Fixed handleVersionSelect (line 335)
+  - Fixed handleVersionRestored (lines 341-345)
+  - Replaced handleAcceptGenerated body (lines 375-385)
+```
+
+#### What Changed (Summary)
+
+| Before | After |
+|--------|-------|
+| Editor reads `content.html ?? content.plain_text` only | Editor reads ANY StructuredContent via `structuredContentToHtml()` |
+| Auto-save triggers useEffect, resetting editor | `initialLoadDone` ref ensures content loads only once |
+| Version select/restore only reads html/plain_text | Uses converter for all content formats |
+| Accept generated: 40+ lines of manual HTML building | Single call to `structuredContentToHtml()` |
+| Version restore reads stale `content` data | Resets `initialLoadDone` to pick up refetched data |
+
+#### Net Impact
+- Editor now correctly displays AI-generated content (press releases, blogs, FAQs, etc.)
+- Auto-save no longer resets the editor, eliminating keystroke loss
+- Version switching works for both structured and HTML content
+- All existing functionality preserved — no changes to services, hooks, types, or database
+
+---
+
+### 2026-02-17 - Compliance Panel Bug Fixes (Session 30 cont'd - Category B)
+
+#### Overview
+Following the Category A Content Format Bridge fix, addressed remaining bugs in the compliance panel's sidebar interaction with the editor. These were identified during the comprehensive content system code review.
+
+#### Issues Found & Fixed
+
+| # | Issue | Root Cause | Fix | Impact |
+|---|-------|-----------|-----|--------|
+| B1 | Auto-save invalidates `contentKeys.detail` unnecessarily | `useCreateVersion` invalidates both `versionKeys.list` and `contentKeys.detail` on every save | **Mitigated by Category A** — the `initialLoadDone` ref now prevents editor reset on refetch. Extra network request keeps sidebar data fresh. No code change needed. | Low (performance only) |
+| B2 | `handleAcceptSuggestion` corrupts HTML when accepting a compliance fix | Uses `string.replace(beforeText, issue.suggestion)` on HTML — plain text replacement inside HTML can corrupt tags and attributes | Replaced with `acceptComplianceSuggestion(issueId, suggestion)` from the compliance marks hook, which uses proper Tiptap position-based text replacement via `textPosToDocPos` | High (data corruption) |
+| B3 | `handleViewInContext` doesn't scroll to the correct issue | ID format mismatch: generates `${start}-${end}-` but `generateIssueId` produces `${start}-${end}-${text.slice(0, 20)}` — the missing text portion causes `scrollToIssue` to fail to find the issue | Added `issue.message.slice(0, 20)` to the ID to match `generateIssueId` format | Medium (broken feature) |
+
+#### Technical Details
+
+**B2 Fix — handleAcceptSuggestion (ContentEditorPage.tsx:423-436)**
+
+Before (broken):
+```typescript
+const text = editor.getText();
+const beforeText = text.substring(issue.position.start, issue.position.end);
+const content = editor.getHTML();
+const newContent = content.replace(beforeText, issue.suggestion); // DANGER: plain text replace in HTML
+editor.commands.setContent(newContent);
+```
+
+After (correct):
+```typescript
+const issueId = `${issue.position.start}-${issue.position.end}-${issue.message.slice(0, 20)}`;
+acceptComplianceSuggestion(issueId, issue.suggestion); // Uses Tiptap position-based replacement
+```
+
+**B3 Fix — handleViewInContext (ContentEditorPage.tsx:438-445)**
+
+Before (broken):
+```typescript
+const issueId = `${issue.position.start}-${issue.position.end}-`; // Missing text portion
+```
+
+After (correct):
+```typescript
+const issueId = `${issue.position.start}-${issue.position.end}-${issue.message.slice(0, 20)}`;
+```
+
+#### Files Modified (2)
+
+```
+src/pages/pr-portal/ContentEditorPage.tsx - Fixed handleAcceptSuggestion (uses hook instead of string replace) and handleViewInContext (correct ID format)
+src/components/ai/CompliancePanel.tsx - Updated onViewInContext type to include message: string
+```
+
+#### Build Verification
+- `tsc --noEmit` passes with no errors
+- `vite build` succeeds
+
+#### Testing Checklist
+
+**Compliance Panel — View in Context:**
+- [ ] Click "View in Context" on a compliance issue → editor scrolls to and highlights the flagged text
+- [ ] Click on different issues → each scrolls to the correct position
+
+**Compliance Panel — Accept Suggestion (when API returns suggestions):**
+- [ ] Click "Accept" on a suggestion → text is replaced at the correct position using Tiptap operations
+- [ ] Surrounding HTML structure is preserved (no tag corruption)
+- [ ] Issue mark is removed after accepting
+
+**Inline Compliance Tooltip (must NOT break):**
+- [ ] Inline tooltip accept/dismiss still works correctly (uses separate hook path)
+
+---
+
+### 2026-02-18 - Content Editor Crash Fixes (Session 31)
+
+#### Overview
+Fixed two critical bugs preventing the Guided Content Creator → Editor flow from working. After generating AI variants and clicking "Select This Variant", the editor page would crash with either an infinite loading spinner or a "Maximum update depth exceeded" React error.
+
+#### Issues Found & Fixed
+
+| # | Issue | Root Cause | Fix | Severity |
+|---|-------|-----------|-----|----------|
+| 1 | Editor crashes with "Maximum update depth exceeded" when loading AI-generated structured content | `@radix-ui/react-scroll-area` v1.2.10 bug: `compose-refs` callback triggers `setState` on every render, causing infinite re-render loop inside `StructuredContentEditor` | Replaced `<ScrollArea>` with `<div className="h-full overflow-y-auto">` — parent container already handles overflow | **Critical** (crash) |
+| 2 | Auto-save race condition: Tiptap editor initializes empty, queues auto-save with `<p></p>`, then overwrites AI content 2 seconds later | `onUpdate` fires during editor initialization before real content loads; `debouncedAutoSave` captures stale empty HTML | Added `initialLoadDone` guard in `onUpdate` callback; cancel pending auto-saves on content load, mode switch, and unmount | **High** (data corruption) |
+
+#### Fix Details
+
+**Bug 1 — ScrollArea Infinite Render Loop (`StructuredContentEditor.tsx`)**
+
+The `StructuredContentEditor` wrapped its content in Radix UI's `<ScrollArea>`. In v1.2.10, the `ScrollAreaViewport` ref uses `compose-refs` which calls `setRef` → `setState` on each render, triggering React's maximum update depth protection. Since the parent `ContentEditorPage` already provides an `overflow-y-auto` container, the Radix `ScrollArea` was unnecessary.
+
+**Bug 2 — Auto-save Race Condition (`ContentEditorPage.tsx`)**
+
+Four targeted edits to prevent stale auto-saves:
+
+| Change | Location | What it does |
+|--------|----------|-------------|
+| Guard `onUpdate` | Tiptap `onUpdate` callback | `if (!initialLoadDone.current) return;` — skips auto-save trigger during editor initialization |
+| Cancel on load | Content loading `useEffect` | `debouncedAutoSave.cancel()` + `debouncedStructuredAutoSave.cancel()` — kills stale pending saves when real content arrives |
+| Cancel on mode switch | `handleModeSwitch` | Cancels both auto-save callbacks when switching between structured/richtext modes |
+| Cancel on unmount | New cleanup `useEffect` | Prevents orphaned saves after navigation away |
+
+#### Files Modified (2)
+
+```
+src/components/editor/StructuredContentEditor.tsx - Replaced ScrollArea with plain div, removed unused import
+src/pages/pr-portal/ContentEditorPage.tsx - Added 4 auto-save guards (onUpdate, content load, mode switch, unmount)
+```
+
+#### Testing Results
+
+**Guided Content Creator → Editor flow:**
+- [x] Generate variants → Select variant → Editor loads without crash
+- [x] Structured content displays correctly with all fields (Headline, Subheadline, Dateline, Lead, Body, etc.)
+- [x] Content Info sidebar shows correct metadata (type, status, word count, compliance score)
+- [x] Status shows "Saved" (no erroneous empty version created)
+
+**Remaining Testing (from Session 30 checklist):**
+- [ ] Edit content → manual save → reload → content persists
+- [ ] Edit content → auto-save → continue editing → NO content reset
+- [ ] Click version in sidebar → loads that version's content
+- [ ] Switch between structured/richtext modes
+- [ ] Export to PDF/DOCX/TXT from editor
+
+#### Build Verification
+- `tsc --noEmit` passes with no errors
+- Dev server runs without errors
+
+*Last Updated: 2026-02-18*

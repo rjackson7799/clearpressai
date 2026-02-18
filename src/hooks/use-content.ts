@@ -218,6 +218,10 @@ export function useDeleteContentItem() {
       queryClient.invalidateQueries({
         queryKey: contentKeys.stats(variables.projectId),
       });
+      // Also invalidate the org-wide content list (used by /pr/content page)
+      queryClient.invalidateQueries({
+        queryKey: contentKeys.lists(),
+      });
       toast.success('コンテンツを削除しました');
     },
     onError: (error: Error) => {

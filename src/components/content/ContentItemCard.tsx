@@ -35,6 +35,7 @@ interface ContentItemCardProps {
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onDuplicate?: (id: string) => void;
+  onClick?: (id: string) => void;
   isLocked?: boolean;
   lockedByName?: string;
   /** Project name to display when showing content across projects */
@@ -48,6 +49,7 @@ export function ContentItemCard({
   onEdit,
   onDelete,
   onDuplicate,
+  onClick,
   isLocked = false,
   lockedByName,
   projectName,
@@ -60,7 +62,10 @@ export function ContentItemCard({
   const complianceScore = content.current_version?.compliance_score;
 
   return (
-    <Card className="group hover:shadow-md transition-shadow">
+    <Card
+      className="group hover:shadow-md transition-shadow cursor-pointer"
+      onClick={() => (onClick ?? onEdit)(content.id)}
+    >
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
@@ -68,7 +73,7 @@ export function ContentItemCard({
               {getContentTypeIcon(content.type)}
             </div>
             <div className="min-w-0">
-              <h3 className="font-medium truncate">{content.title}</h3>
+              <h3 className="font-medium line-clamp-2">{content.title}</h3>
               <p className="text-sm text-muted-foreground">
                 {t(`content.${content.type}`)}
               </p>
@@ -80,12 +85,13 @@ export function ContentItemCard({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-8 w-8 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => e.stopPropagation()}
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
               <DropdownMenuItem onClick={() => onEdit(content.id)}>
                 <Edit className="h-4 w-4 mr-2" />
                 {t('common.edit')}

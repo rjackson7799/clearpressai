@@ -59,6 +59,7 @@ export function GuidedContentPage() {
   const [step, setStep] = useState<WizardStep>('form');
   const [generatedVariants, setGeneratedVariants] = useState<ContentVariant[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<ContentTemplate | null>(null);
+  const [selectingVariantId, setSelectingVariantId] = useState<string | null>(null);
 
   // Form state
   const [projectId, setProjectId] = useState(initialProjectId);
@@ -202,6 +203,9 @@ export function GuidedContentPage() {
   // Handle variant selection
   const handleSelectVariant = useCallback(
     async (variant: ContentVariant) => {
+      if (selectingVariantId) return; // Prevent double-click
+      setSelectingVariantId(variant.id);
+
       try {
         // Step 1: Create the content item
         const contentItem = await createContentItem.mutateAsync({
@@ -218,6 +222,10 @@ export function GuidedContentPage() {
           },
         });
 
+        if (!contentItem?.id) {
+          throw new Error('Content item creation returned no ID');
+        }
+
         // Step 2: Create the first version with the selected variant content
         await createVersion.mutateAsync({
           contentItemId: contentItem.id,
@@ -230,14 +238,17 @@ export function GuidedContentPage() {
         });
 
         // Navigate to the editor
-        navigate(`/pr/projects/${projectId}/content/${contentItem.id}`);
         toast.success(t('content.newContent'));
+        navigate(`/pr/projects/${projectId}/content/${contentItem.id}`);
       } catch (error) {
         console.error('Failed to create content:', error);
-        toast.error(t('common.error'));
+        toast.error(
+          error instanceof Error ? error.message : t('common.error')
+        );
+        setSelectingVariantId(null);
       }
     },
-    [projectId, contentType, title, tone, targetLength, includeIsi, includeBoilerplate, createContentItem, createVersion, navigate, t]
+    [selectingVariantId, projectId, contentType, title, tone, targetLength, includeIsi, includeBoilerplate, createContentItem, createVersion, navigate, t]
   );
 
   // Handle back to edit
@@ -295,6 +306,8 @@ export function GuidedContentPage() {
           onRegenerate={handleRegenerate}
           onBackToEdit={handleBackToEdit}
           isRegenerating={isGenerating}
+          isSelecting={!!selectingVariantId}
+          selectingVariantId={selectingVariantId}
         />
       )}
 

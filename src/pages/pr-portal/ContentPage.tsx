@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useAllContentItems } from '@/hooks/use-content';
+import { useAllContentItems, useDeleteContentItem } from '@/hooks/use-content';
 import { useProjects } from '@/hooks/use-projects';
 import { useClients } from '@/hooks/use-clients';
 import { Button } from '@/components/ui/button';
@@ -256,6 +256,7 @@ export function ContentPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   const { data, isLoading, error } = useAllContentItems(filters);
+  const deleteContentMutation = useDeleteContentItem();
 
   // Handle filter changes
   const handleFilterChange = (newFilters: Partial<ContentPageFilters>) => {
@@ -275,12 +276,16 @@ export function ContentPage() {
     }
   };
 
-  // Handle delete (not implemented yet, would require project context)
+  // Handle delete with confirmation
   const handleDelete = (contentId: string) => {
-    // For now, redirect to project to delete
     const content = data?.data.find((c) => c.id === contentId);
-    if (content) {
-      navigate(`/pr/projects/${content.project_id}`);
+    if (!content) return;
+
+    if (window.confirm(t('editor.deleteConfirm'))) {
+      deleteContentMutation.mutate({
+        contentItemId: contentId,
+        projectId: content.project_id,
+      });
     }
   };
 

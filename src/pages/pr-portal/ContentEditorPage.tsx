@@ -135,6 +135,9 @@ export function ContentEditorPage() {
   const lastSavedContent = useRef('');
   const initialLoadDone = useRef(false);
   const editorContainerRef = useRef<HTMLDivElement>(null);
+  // Refs for stable command palette action wrappers (avoids infinite render loop)
+  const handleSaveRef = useRef<() => Promise<void>>();
+  const updateStatusMutationRef = useRef(updateStatusMutation);
 
   // Structured editor state
   const [editorMode, setEditorMode] = useState<'structured' | 'richtext'>('richtext');
@@ -178,6 +181,10 @@ export function ContentEditorPage() {
       },
     },
     onUpdate: ({ editor }) => {
+      // Don't auto-save until initial content has loaded — prevents
+      // the empty-editor initialization from overwriting AI-generated content
+      if (!initialLoadDone.current) return;
+
       const html = editor.getHTML();
       const text = editor.getText();
       if (html !== lastSavedContent.current) {
@@ -202,6 +209,10 @@ export function ContentEditorPage() {
   // Load content into editor (only on initial load, not after auto-save refetch)
   useEffect(() => {
     if (content && editor && !initialLoadDone.current) {
+      // Cancel any pending auto-saves from editor initialization
+      debouncedAutoSave.cancel();
+      debouncedStructuredAutoSave.cancel();
+
       setTitle(content.title);
       const versionContent = content.current_version?.content;
 
@@ -316,6 +327,14 @@ export function ContentEditorPage() {
     2000
   );
 
+  // Cancel pending auto-saves on unmount to prevent stale writes
+  useEffect(() => {
+    return () => {
+      debouncedAutoSave.cancel();
+      debouncedStructuredAutoSave.cancel();
+    };
+  }, [debouncedAutoSave, debouncedStructuredAutoSave]);
+
   // Handle structured content changes
   const handleStructuredChange = useCallback(
     (data: StructuredContent) => {
@@ -381,6 +400,10 @@ export function ContentEditorPage() {
       toast.error(t('editor.saveFailed'));
     }
   }, [contentId, user?.id, editor, title, content?.title, editorMode, updateContentMutation, createVersionMutation, t]);
+
+  // Keep action refs up to date for stable command palette wrappers
+  useEffect(() => { handleSaveRef.current = handleSave; }, [handleSave]);
+  useEffect(() => { updateStatusMutationRef.current = updateStatusMutation; }, [updateStatusMutation]);
 
   // Insert ISI block
   const handleInsertISI = useCallback((isiContent: string) => {
@@ -492,8 +515,10 @@ export function ContentEditorPage() {
 
     let exportHtml: string;
     let exportText: string;
+    let exportStructured: StructuredContent | undefined;
 
     if (editorMode === 'structured') {
+      exportStructured = structuredDataRef.current;
       exportHtml = structuredContentToHtml(structuredDataRef.current);
       exportText = structuredToPlainText(structuredDataRef.current);
     } else {
@@ -516,7 +541,8 @@ export function ContentEditorPage() {
           versionNumber: content.current_version?.version_number ?? 1,
           wordCount: content.current_version?.word_count ?? exportText.split(/\s+/).length,
           complianceScore: complianceResult?.score,
-        }
+        },
+        exportStructured
       );
       toast.success(t('export.success'));
       setShowExportDialog(false);
@@ -552,6 +578,10 @@ export function ContentEditorPage() {
   const handleModeSwitch = useCallback(
     (mode: 'structured' | 'richtext') => {
       if (mode === editorMode) return;
+
+      // Cancel pending auto-saves from the outgoing mode
+      debouncedAutoSave.cancel();
+      debouncedStructuredAutoSave.cancel();
 
       if (mode === 'richtext') {
         // Structured → Rich Text: convert structured content to HTML
@@ -592,7 +622,10 @@ export function ContentEditorPage() {
     return () => setActiveContext('global');
   }, [setActiveContext]);
 
-  // Define editor-specific commands
+  // Define editor-specific commands (actions use refs to avoid unstable deps)
+  const hasEditor = !!editor;
+  const hasContent = !!content;
+  const contentStatus = content?.status;
   const editorCommands = useMemo(() => [
     {
       id: 'editor-save',
@@ -600,10 +633,10 @@ export function ContentEditorPage() {
       description: t('commandPalette.commands.saveDescription'),
       shortcut: formatShortcut({ key: 's', ctrlOrMeta: true }),
       icon: Save,
-      action: handleSave,
+      action: () => handleSaveRef.current?.(),
       category: t('commandPalette.categories.content'),
       context: 'editor' as const,
-      enabled: !!contentId && !!editor,
+      enabled: !!contentId && hasEditor,
     },
     {
       id: 'editor-generate',
@@ -614,7 +647,7 @@ export function ContentEditorPage() {
       action: () => setSidebarTab('ai'),
       category: t('commandPalette.categories.ai'),
       context: 'editor' as const,
-      enabled: !!content && !isGenerating,
+      enabled: hasContent && !isGenerating,
     },
     {
       id: 'editor-submit',
@@ -623,9 +656,9 @@ export function ContentEditorPage() {
       shortcut: formatShortcut({ key: 'enter', ctrlOrMeta: true }),
       icon: SendHorizonal,
       action: async () => {
-        if (!contentId || content?.status !== 'draft') return;
+        if (!contentId || contentStatus !== 'draft') return;
         try {
-          await updateStatusMutation.mutateAsync({
+          await updateStatusMutationRef.current.mutateAsync({
             contentItemId: contentId,
             status: 'submitted',
           });
@@ -636,9 +669,9 @@ export function ContentEditorPage() {
       },
       category: t('commandPalette.categories.content'),
       context: 'editor' as const,
-      enabled: content?.status === 'draft',
+      enabled: contentStatus === 'draft',
     },
-  ], [t, handleSave, contentId, editor, content, isGenerating, updateStatusMutation]);
+  ], [t, contentId, hasEditor, hasContent, isGenerating, contentStatus]);
 
   // Register editor commands
   useEffect(() => {

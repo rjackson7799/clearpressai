@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     marginBottom: PDF_STYLES.spacing.paragraphGap,
   },
   quoteText: {
-    fontStyle: 'italic',
+    color: '#4B5563',
     marginBottom: 4,
   },
   quoteAttribution: {

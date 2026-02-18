@@ -4,7 +4,7 @@
  */
 
 import { pdf } from '@react-pdf/renderer';
-import type { ContentItem, ContentVersion, Project } from '@/types';
+import type { ContentItem, ContentVersion, Project, StructuredContent } from '@/types';
 import type {
   ExportOptions,
   ExportContentData,
@@ -113,15 +113,18 @@ export async function exportContentFromEditor(
     versionNumber?: number;
     wordCount?: number;
     complianceScore?: number;
-  }
+  },
+  structuredContent?: StructuredContent
 ): Promise<void> {
   // Build export data from editor content
+  // When structured content is available, pass it directly so generators
+  // can access headline, body, quotes, sections, etc.
   const data: ExportContentData = {
     title,
     contentType,
     versionNumber: metadata?.versionNumber ?? 1,
     wordCount: metadata?.wordCount ?? plainText.split(/\s+/).length,
-    content: {
+    content: structuredContent ?? {
       html,
       plain_text: plainText,
     },
