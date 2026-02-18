@@ -26,18 +26,21 @@ interface DeleteProjectDialogProps {
   project: DeletableProject | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  contentCount?: number;
 }
 
 export function DeleteProjectDialog({
   project,
   open,
   onOpenChange,
+  contentCount = 0,
 }: DeleteProjectDialogProps) {
   const { t } = useLanguage();
   const deleteProject = useDeleteProject();
+  const hasContent = contentCount > 0;
 
   const handleDelete = async () => {
-    if (!project) return;
+    if (!project || hasContent) return;
 
     try {
       await deleteProject.mutateAsync(project.id);
@@ -58,15 +61,17 @@ export function DeleteProjectDialog({
             <span className="font-medium text-gray-900">{project.name}</span>
             <br />
             <br />
-            {t('projects.deleteConfirmDescription')}
+            {hasContent
+              ? t('projects.deleteBlockedByContent').replace('{count}', String(contentCount))
+              : t('projects.deleteConfirmDescription')}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
-            disabled={deleteProject.isPending}
-            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            disabled={hasContent || deleteProject.isPending}
+            className="bg-red-600 hover:bg-red-700 focus:ring-red-600 disabled:opacity-50"
           >
             {deleteProject.isPending && (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />

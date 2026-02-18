@@ -182,6 +182,7 @@ export function ProjectsPage() {
         project={deletingProject}
         open={!!deletingProject}
         onOpenChange={(open) => !open && setDeletingProject(null)}
+        contentCount={deletingProject?.content_items?.[0]?.count ?? 0}
       />
 
       {/* Email to Project Dialog */}

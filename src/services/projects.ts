@@ -307,13 +307,18 @@ export async function updateProjectStatus(
  * Delete a project
  */
 export async function deleteProject(projectId: string): Promise<void> {
-  const { error } = await supabase
+  const { error, data } = await supabase
     .from('projects')
     .delete()
-    .eq('id', projectId);
+    .eq('id', projectId)
+    .select('id');
 
   if (error) {
     console.error('Error deleting project:', error);
+    throw new Error('プロジェクトの削除に失敗しました');
+  }
+
+  if (!data || data.length === 0) {
     throw new Error('プロジェクトの削除に失敗しました');
   }
 }

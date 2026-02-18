@@ -186,6 +186,7 @@ export const translations = {
       // Confirmation dialogs
       deleteConfirmTitle: 'プロジェクトを削除しますか？',
       deleteConfirmDescription: 'この操作は元に戻せません。関連するコンテンツも削除されます。',
+      deleteBlockedByContent: 'このプロジェクトにはコンテンツが{count}件あります。削除するには、先にコンテンツを削除してください。',
       // Dialog descriptions
       createDescription: '新しいプロジェクトを作成します',
       // Success/error messages
@@ -1350,6 +1351,7 @@ export const translations = {
       // Confirmation dialogs
       deleteConfirmTitle: 'Delete project?',
       deleteConfirmDescription: 'This action cannot be undone. Related content will also be deleted.',
+      deleteBlockedByContent: 'This project has {count} content item(s). Please delete the content first before deleting the project.',
       // Dialog descriptions
       createDescription: 'Create a new project',
       // Success/error messages

@@ -277,6 +277,7 @@ export function ProjectDetailPage() {
             handleDeleteSuccess();
           }
         }}
+        contentCount={project?.content_items?.length ?? 0}
       />
     </div>
   );
