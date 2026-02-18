@@ -136,7 +136,7 @@ export function ContentEditorPage() {
   const initialLoadDone = useRef(false);
   const editorContainerRef = useRef<HTMLDivElement>(null);
   // Refs for stable command palette action wrappers (avoids infinite render loop)
-  const handleSaveRef = useRef<() => Promise<void>>();
+  const handleSaveRef = useRef<(() => Promise<void>) | undefined>(undefined);
   const updateStatusMutationRef = useRef(updateStatusMutation);
 
   // Structured editor state
