@@ -92,7 +92,7 @@ export function ProjectContentSection({
             {contentItems.data.map((item: ContentItem) => (
               <Link
                 key={item.id}
-                to={`/pr/content/${item.id}`}
+                to={`/pr/projects/${projectId}/content/${item.id}`}
                 className="flex items-center justify-between py-3 px-3 -mx-3 rounded-lg hover:bg-gray-50 group"
               >
                 <div className="min-w-0 flex-1">

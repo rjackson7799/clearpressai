@@ -83,14 +83,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+      try {
+        setSession(session);
+        setUser(session?.user ?? null);
 
-      if (session?.user) {
-        const profileData = await fetchProfile(session.user.id);
-        setProfile(profileData);
+        if (session?.user) {
+          const profileData = await fetchProfile(session.user.id);
+          setProfile(profileData);
+        }
+      } catch (error) {
+        console.error('Error during auth initialization:', error);
+      } finally {
+        setIsLoading(false);
       }
-
+    }).catch((error) => {
+      console.error('Error getting session:', error);
       setIsLoading(false);
     });
 
@@ -98,17 +105,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+      try {
+        setSession(session);
+        setUser(session?.user ?? null);
 
-      if (session?.user) {
-        const profileData = await fetchProfile(session.user.id);
-        setProfile(profileData);
-      } else {
-        setProfile(null);
+        if (session?.user) {
+          const profileData = await fetchProfile(session.user.id);
+          setProfile(profileData);
+        } else {
+          setProfile(null);
+        }
+      } catch (error) {
+        console.error('Error during auth state change:', error);
+      } finally {
+        setIsLoading(false);
       }
-
-      setIsLoading(false);
     });
 
     return () => {

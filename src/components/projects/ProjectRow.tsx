@@ -196,7 +196,7 @@ export function ProjectRow({ project, onEdit, onDelete }: ProjectRowProps) {
                     key={item.id}
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(`/pr/content/${item.id}`);
+                      navigate(`/pr/projects/${project.id}/content/${item.id}`);
                     }}
                     className="flex items-center justify-between py-2 px-3 -mx-3 rounded-lg hover:bg-white cursor-pointer transition-colors group"
                   >
