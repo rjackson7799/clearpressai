@@ -229,13 +229,36 @@ export async function extractStyle(
 export async function generateContentVariants(
   brief: ContentGenerationBrief
 ): Promise<GenerateVariantsResponse> {
-  const { data, error } = await supabase.functions.invoke('generate-content-variants', {
+  const { data, error, response } = await supabase.functions.invoke('generate-content-variants', {
     body: brief,
   });
 
   if (error) {
-    console.error('Error generating content variants:', error);
-    throw new Error('コンテンツバリエーションの生成に失敗しました');
+    // For non-2xx responses, try to extract the actual error from the response body
+    let errorMessage = 'コンテンツバリエーションの生成に失敗しました';
+    const errorResponse = response ?? error?.context;
+    if (errorResponse && typeof errorResponse.json === 'function') {
+      try {
+        const errorBody = await errorResponse.json();
+        console.error('Edge function error response:', errorBody);
+        if (errorBody?.error?.message) {
+          errorMessage = errorBody.error.message;
+        } else if (errorBody?.message) {
+          errorMessage = errorBody.message;
+        }
+      } catch (parseErr) {
+        console.error('Error generating content variants:', error, 'Parse error:', parseErr);
+      }
+    } else {
+      console.error('Error generating content variants:', error);
+    }
+    throw new Error(errorMessage);
+  }
+
+  // Check for application-level errors from the edge function
+  if (data && !data.success) {
+    console.error('Edge function error:', data.error);
+    throw new Error(data.error?.message || 'コンテンツバリエーションの生成に失敗しました');
   }
 
   return data as GenerateVariantsResponse;

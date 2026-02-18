@@ -164,7 +164,11 @@ export function GuidedContentPage() {
       }
     } catch (error) {
       console.error('Generation failed:', error);
-      toast.error(t('guidedContent.generationFailed'));
+      const message =
+        error instanceof Error && error.message !== 'No variants generated'
+          ? error.message
+          : t('guidedContent.generationFailed');
+      toast.error(message);
       setStep('form');
     }
   }, [

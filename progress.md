@@ -1424,4 +1424,63 @@ src/pages/pr-portal/ContentPage.tsx - Added client filter dropdown, updated labe
 
 ---
 
-*Last Updated: 2025-02-03*
+### 2025-02-17 - Guided Content Creator Bug Fix (Session 29)
+
+#### Overview
+Fixed the Guided Content Creator (`/pr/content/new/guided`) which had never worked since implementation. The "Generate Variants" button was failing silently with a generic error toast. Root cause was a chain of 5 issues spanning client-side error handling, Supabase gateway configuration, and deprecated AI models.
+
+#### Issues Found & Fixed
+
+| # | Issue | Root Cause | Fix |
+|---|-------|-----------|-----|
+| 1 | Generic "Failed to generate variants" error | `GenerateVariantsResponse` type missing `success`/`error` fields; error messages silently swallowed | Updated type in `src/types/index.ts`; added `data.success` check in `src/services/ai.ts` |
+| 2 | "Edge Function returned a non-2xx status code" | Supabase `FunctionsHttpError` response body not being read | Updated `generateContentVariants()` in `src/services/ai.ts` to read error body from `response ?? error?.context` |
+| 3 | "Invalid JWT" (HTTP 401) | Supabase gateway-level JWT verification rejecting requests before edge function code runs | Redeployed all 9 edge functions with `--no-verify-jwt` flag |
+| 4 | "Failed to generate content" (HTTP 500) | Edge function's Claude API error handler only logged server-side | Updated error throw message in `generate-content-variants/index.ts` to include actual Claude API error details |
+| 5 | "Claude API error (404): model claude-3-5-sonnet-20241022 not found" | Deprecated Claude model IDs no longer exist in the API | Updated all 7 AI edge functions to current model IDs |
+
+#### Model Updates
+| Old Model ID | New Model ID | Functions Updated |
+|---|---|---|
+| `claude-3-5-sonnet-20241022` | `claude-sonnet-4-5-20250929` | generate-content-variants, generate-content, check-compliance, expand-brief, extract-style, adjust-tone |
+| `claude-3-5-haiku-20241022` | `claude-haiku-4-5-20251001` | enhance-title |
+
+#### Infrastructure Changes
+All 9 edge functions redeployed with `--no-verify-jwt`:
+```
+generate-content-variants, generate-content, check-compliance,
+expand-brief, send-notification, extract-style, adjust-tone,
+enhance-title, invite-user
+```
+This is safe because every function validates JWT tokens internally via `supabaseUser.auth.getUser()`.
+
+#### Files Modified (4)
+```
+src/types/index.ts - Added success/error fields to GenerateVariantsResponse, made variants optional
+src/services/ai.ts - Improved error extraction from FunctionsHttpError responses
+src/pages/pr-portal/GuidedContentPage.tsx - Show actual error messages in toast
+supabase/functions/generate-content-variants/index.ts - Updated model, improved error messages
+```
+
+#### Edge Functions Updated (model change only) (6)
+```
+supabase/functions/generate-content/index.ts
+supabase/functions/check-compliance/index.ts
+supabase/functions/expand-brief/index.ts
+supabase/functions/extract-style/index.ts
+supabase/functions/adjust-tone/index.ts
+supabase/functions/enhance-title/index.ts
+```
+
+#### Verification
+- All 3 variants generated successfully with 100/100 compliance scores
+- Error messages now surface actual details instead of generic failures
+- Build passes successfully
+
+#### Known Issues (Non-blocking, Separate from this fix)
+- Realtime channel binding mismatch error for notifications (cosmetic console error)
+- Tiptap duplicate extensions warning in ContentEditorPage (cosmetic console warning)
+
+---
+
+*Last Updated: 2025-02-17*

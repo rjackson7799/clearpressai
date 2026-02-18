@@ -486,8 +486,13 @@ export interface ContentVariant {
  * Response from variant generation
  */
 export interface GenerateVariantsResponse {
-  variants: ContentVariant[];
+  success: boolean;
+  variants?: ContentVariant[];
   brief_id?: string;
+  error?: {
+    code: string;
+    message: string;
+  };
 }
 
 /**

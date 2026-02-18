@@ -61,7 +61,24 @@ export function VariantPicker({
     if (content.body && content.body.length > 0) {
       parts.push(content.body[0]);
     }
-    if (content.plain_text) parts.push(content.plain_text);
+    if (content.plain_text && parts.length === 0) parts.push(content.plain_text);
+
+    // Last resort: extract any string values from the content object
+    if (parts.length === 0) {
+      for (const value of Object.values(content)) {
+        if (typeof value === 'string' && value.trim()) {
+          parts.push(value);
+        } else if (Array.isArray(value)) {
+          for (const item of value) {
+            if (typeof item === 'string' && item.trim()) parts.push(item);
+            else if (item && typeof item === 'object') {
+              if ('text' in item) parts.push(String(item.text));
+              else if ('content' in item) parts.push(String(item.content));
+            }
+          }
+        }
+      }
+    }
 
     const fullText = parts.join('\n\n');
     return fullText.slice(0, 500) + (fullText.length > 500 ? '...' : '');
@@ -93,6 +110,23 @@ export function VariantPicker({
     if (content.isi) parts.push(`\n---\n【重要な安全性情報】\n${content.isi}`);
     if (content.contact) parts.push(`\n${content.contact}`);
     if (content.plain_text && parts.length === 0) parts.push(content.plain_text);
+
+    // Last resort: extract any string/array values from the content object
+    if (parts.length === 0) {
+      for (const value of Object.values(content)) {
+        if (typeof value === 'string' && value.trim()) {
+          parts.push(value);
+        } else if (Array.isArray(value)) {
+          for (const item of value) {
+            if (typeof item === 'string' && item.trim()) parts.push(item);
+            else if (item && typeof item === 'object') {
+              if ('text' in item) parts.push(String(item.text));
+              else if ('content' in item) parts.push(String(item.content));
+            }
+          }
+        }
+      }
+    }
 
     return parts.join('\n\n');
   };

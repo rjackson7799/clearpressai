@@ -216,16 +216,90 @@ PROHIBITED:
 - "副作用がない" (no side effects)
 - "100%安全" (100% safe)`;
 
-const OUTPUT_FORMAT_PROMPT = `
+const OUTPUT_FORMAT_HEADER = `
 OUTPUT FORMAT:
-Respond with a valid JSON object only, no markdown code blocks:
+You MUST respond with a valid JSON object only. No markdown code blocks, no extra text.
+Use EXACTLY the key names shown below - do not rename, translate, or omit any keys.
+All text content should be in Japanese (日本語).`;
+
+const OUTPUT_FORMAT_SCHEMAS: Record<ContentType, string> = {
+  press_release: `
 {
   "structured": {
-    // Content structure based on content type
+    "headline": "Main headline text",
+    "subheadline": "Supporting detail text",
+    "dateline": "City name, YYYY年MM月DD日",
+    "lead": "Lead paragraph with who/what/when/where/why",
+    "body": ["Body paragraph 1", "Body paragraph 2", "Body paragraph 3"],
+    "quotes": [{"text": "Quote text here", "attribution": "Speaker name and title"}],
+    "boilerplate": "Company description text",
+    "contact": "Contact information text",
+    "isi": "Important safety information if pharmaceutical, otherwise omit"
   },
-  "plain_text": "Full content as plain text",
+  "plain_text": "Full content as continuous plain text combining all sections above",
   "word_count": 000
-}`;
+}`,
+  blog_post: `
+{
+  "structured": {
+    "title": "Blog post title",
+    "introduction": "Introduction paragraph that hooks the reader",
+    "sections": [{"heading": "Section heading", "content": "Section body text"}],
+    "conclusion": "Conclusion paragraph summarizing key takeaways",
+    "cta": "Call to action text"
+  },
+  "plain_text": "Full content as continuous plain text combining all sections above",
+  "word_count": 000
+}`,
+  social_media: `
+{
+  "structured": {
+    "title": "Post title or hook line",
+    "body": ["Twitter/X version with hashtags", "LinkedIn version", "Facebook version"],
+    "cta": "Call to action or additional hashtags"
+  },
+  "plain_text": "Full content as continuous plain text combining all sections above",
+  "word_count": 000
+}`,
+  internal_memo: `
+{
+  "structured": {
+    "title": "Memo subject line",
+    "headline": "TO/FROM/DATE header block",
+    "lead": "Purpose statement paragraph",
+    "body": ["Background paragraph", "Key information paragraph", "Action required paragraph"],
+    "contact": "Contact for questions"
+  },
+  "plain_text": "Full content as continuous plain text combining all sections above",
+  "word_count": 000
+}`,
+  faq: `
+{
+  "structured": {
+    "title": "FAQ document title",
+    "introduction": "Brief introduction text",
+    "sections": [{"heading": "Question text?", "content": "Answer text"}],
+    "conclusion": "Closing note or contact information"
+  },
+  "plain_text": "Full content as continuous plain text combining all sections above",
+  "word_count": 000
+}`,
+  executive_statement: `
+{
+  "structured": {
+    "title": "Statement title",
+    "lead": "Opening acknowledgment of the occasion or situation",
+    "body": ["Core message paragraph", "Context and rationale paragraph", "Commitment and next steps paragraph"],
+    "conclusion": "Forward-looking closing statement"
+  },
+  "plain_text": "Full content as continuous plain text combining all sections above",
+  "word_count": 000
+}`,
+};
+
+function getOutputFormatPrompt(contentType: ContentType): string {
+  return OUTPUT_FORMAT_HEADER + '\n' + OUTPUT_FORMAT_SCHEMAS[contentType];
+}
 
 // Variation prompts for generating different variants
 const VARIATION_PROMPTS = [
@@ -311,10 +385,61 @@ function buildPrompt(
   // Add variation instruction
   prompt += `\nVARIATION INSTRUCTION: ${VARIATION_PROMPTS[variationIndex]}\n\n`;
 
-  // Add output format
-  prompt += OUTPUT_FORMAT_PROMPT;
+  // Add output format with explicit JSON schema for this content type
+  prompt += getOutputFormatPrompt(brief.content_type);
 
   return prompt;
+}
+
+// Map common alternative key names to canonical StructuredContent keys
+const KEY_ALIASES: Record<string, string> = {
+  'Headline': 'headline', 'HEADLINE': 'headline',
+  'SubHeadline': 'subheadline', 'SUBHEADLINE': 'subheadline', 'Subheadline': 'subheadline', 'sub_headline': 'subheadline',
+  'Dateline': 'dateline', 'DATELINE': 'dateline', 'date_line': 'dateline',
+  'Lead': 'lead', 'LEAD': 'lead', 'lead_paragraph': 'lead',
+  'Body': 'body', 'BODY': 'body', 'body_paragraphs': 'body',
+  'Title': 'title', 'TITLE': 'title',
+  'Introduction': 'introduction', 'INTRODUCTION': 'introduction', 'intro': 'introduction',
+  'Sections': 'sections', 'SECTIONS': 'sections', 'main_content': 'sections',
+  'Conclusion': 'conclusion', 'CONCLUSION': 'conclusion',
+  'CTA': 'cta', 'call_to_action': 'cta', 'Cta': 'cta',
+  'Boilerplate': 'boilerplate', 'BOILERPLATE': 'boilerplate',
+  'ISI': 'isi', 'safety_information': 'isi', 'important_safety_information': 'isi',
+  'Contact': 'contact', 'CONTACT': 'contact', 'contact_information': 'contact',
+  'Quotes': 'quotes', 'QUOTES': 'quotes',
+  'plain_text': 'plain_text', 'Plain_text': 'plain_text', 'plainText': 'plain_text',
+  // Japanese key names Claude might use
+  '見出し': 'headline', 'サブ見出し': 'subheadline', 'リード文': 'lead',
+  '本文': 'body', 'タイトル': 'title', '導入部': 'introduction',
+  'まとめ': 'conclusion', '引用': 'quotes', '会社概要': 'boilerplate',
+  'お問い合わせ先': 'contact', '重要な安全性情報': 'isi',
+};
+
+function normalizeStructuredContent(
+  raw: Record<string, unknown>,
+  plainText: string
+): StructuredContent {
+  const result: Record<string, unknown> = {};
+
+  // Map keys using aliases
+  for (const [key, value] of Object.entries(raw)) {
+    const canonicalKey = KEY_ALIASES[key] || key;
+    if (value !== null && value !== undefined) {
+      result[canonicalKey] = value;
+    }
+  }
+
+  // Ensure body is always an array if present
+  if (result.body && typeof result.body === 'string') {
+    result.body = [result.body];
+  }
+
+  // Ensure plain_text is present for fallback
+  if (!result.plain_text && plainText) {
+    result.plain_text = plainText;
+  }
+
+  return result as StructuredContent;
 }
 
 function parseClaudeResponse(response: string): {
@@ -338,9 +463,14 @@ function parseClaudeResponse(response: string): {
 
   try {
     const parsed = JSON.parse(jsonStr);
+    // Use parsed.structured if it exists, otherwise treat the entire parsed object as content
+    const rawStructured = parsed.structured || parsed;
+    const plainText = parsed.plain_text || '';
+    const structured = normalizeStructuredContent(rawStructured, plainText);
+
     return {
-      structured: parsed.structured || {},
-      plain_text: parsed.plain_text || '',
+      structured,
+      plain_text: plainText || structured.plain_text || '',
       word_count: parsed.word_count || 0,
     };
   } catch {
@@ -511,7 +641,7 @@ serve(async (req: Request): Promise<Response> => {
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-sonnet-4-5-20250929',
           max_tokens: 4096,
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.7 + variantIndex * 0.1, // Slightly vary temperature for diversity
@@ -521,7 +651,7 @@ serve(async (req: Request): Promise<Response> => {
       if (!claudeResponse.ok) {
         const errorText = await claudeResponse.text();
         console.error(`Claude API error for variant ${variantIndex}:`, errorText);
-        throw new Error('Failed to generate content');
+        throw new Error(`Claude API error (${claudeResponse.status}): ${errorText}`);
       }
 
       const claudeData = await claudeResponse.json();
@@ -545,7 +675,7 @@ serve(async (req: Request): Promise<Response> => {
         word_count: parsed.word_count || parsed.plain_text.length,
         generation_params: {
           tone: brief.tone,
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-sonnet-4-5-20250929',
           temperature: 0.7 + variantIndex * 0.1,
         },
       };
