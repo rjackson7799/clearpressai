@@ -1,0 +1,29 @@
+{
+  "common": {
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "logout": "ログアウト",
+    "loading": "読み込み中…"
+  },
+  "auth": {
+    "login": "ログイン",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "magic_link": "マジックリンクで送信",
+    "forgot_password": "パスワードをお忘れの方",
+    "reset_password": "パスワード再設定"
+  },
+  "nav": {
+    "dashboard": "ダッシュボード",
+    "clients": "クライアント",
+    "projects": "プロジェクト",
+    "settings": "設定"
+  },
+  "settings": {
+    "title": "設定",
+    "language": "言語",
+    "language_japanese": "日本語",
+    "language_english": "English"
+  }
+}

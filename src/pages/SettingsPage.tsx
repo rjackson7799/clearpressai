@@ -1,3 +1,6 @@
+import { useTranslation } from "react-i18next";
+
 export default function SettingsPage() {
-  return <div className="p-8">Settings / 設定</div>;
+  const { t } = useTranslation();
+  return <div className="p-8">{t("settings.title")}</div>;
 }
