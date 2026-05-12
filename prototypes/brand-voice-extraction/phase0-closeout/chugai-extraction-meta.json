@@ -1,0 +1,29 @@
+{
+  "company": "chugai",
+  "tag": "tsd-baseline",
+  "model": "claude-sonnet-4-6",
+  "prompt_version": "v1-tsd-baseline",
+  "sample_count": 15,
+  "sample_filenames": [
+    "01-20260511.txt",
+    "02-20260422.txt",
+    "03-20260422.txt",
+    "04-20260409.txt",
+    "05-20260406.txt",
+    "06-20260402.txt",
+    "07-20260323.txt",
+    "08-20260323.txt",
+    "09-20260319.txt",
+    "10-20260310.txt",
+    "11-20260226.txt",
+    "12-20260220.txt",
+    "13-20260219.txt",
+    "14-20260210.txt",
+    "15-20260209.txt"
+  ],
+  "elapsed_ms": 17958,
+  "input_tokens": 24699,
+  "output_tokens": 829,
+  "stop_reason": "end_turn",
+  "timestamp": "2026-05-12T20:14:11.893Z"
+}

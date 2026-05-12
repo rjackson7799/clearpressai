@@ -81,9 +81,15 @@ async function main() {
   }
   const rawText = textBlock.text.trim();
 
+  // Strip optional markdown code fences. The prompt says "no markdown" but
+  // the model occasionally wraps JSON in ```json ... ``` anyway; treat this
+  // as defensive sanitation rather than fighting the prompt.
+  const fenced = rawText.match(/^```(?:json)?\s*\n([\s\S]*?)\n```$/);
+  const jsonText = fenced ? fenced[1]! : rawText;
+
   let parsed: unknown;
   try {
-    parsed = JSON.parse(rawText);
+    parsed = JSON.parse(jsonText);
   } catch (err) {
     const folder = ensureRunFolder(buildRunFolderName(`${tag}-PARSE_FAIL`));
     writeText(folder, `${company}-raw.txt`, rawText);

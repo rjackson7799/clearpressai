@@ -1,0 +1,29 @@
+{
+  "company": "astrazeneca-jp",
+  "tag": "tsd-baseline",
+  "model": "claude-sonnet-4-6",
+  "prompt_version": "v1-tsd-baseline",
+  "sample_count": 15,
+  "sample_filenames": [
+    "01-20260414.txt",
+    "02-20260409.txt",
+    "03-20260330.txt",
+    "04-20260304.txt",
+    "05-20260227.txt",
+    "06-20260219.txt",
+    "07-20260219.txt",
+    "08-20260217.txt",
+    "09-20260217.txt",
+    "10-20251203.txt",
+    "11-20251128.txt",
+    "12-20251121.txt",
+    "13-20251105.txt",
+    "14-20251029.txt",
+    "15-20250919.txt"
+  ],
+  "elapsed_ms": 20044,
+  "input_tokens": 69451,
+  "output_tokens": 809,
+  "stop_reason": "end_turn",
+  "timestamp": "2026-05-12T20:11:41.984Z"
+}

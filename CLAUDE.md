@@ -21,7 +21,7 @@ Two documents in `docs/` define what we're building. They supersede anything Cla
 
 TSD §16 defines Phase 0 → Phase 7. Phase 0 is the load-bearing technical uncertainty and must validate before downstream phases lock in.
 
-- **Phase 0** — Brand voice extraction prototype at [prototypes/brand-voice-extraction/](prototypes/brand-voice-extraction/). Pre-product, isolated, discardable. The validated extraction prompt graduates to `src/lib/prompts/brand-voice.ts` in Phase 2.
+- **Phase 0** — ☑ **PASSED 2026-05-12.** Brand voice extraction prototype at [prototypes/brand-voice-extraction/](prototypes/brand-voice-extraction/). Closeout at [prototypes/brand-voice-extraction/phase0-closeout/](prototypes/brand-voice-extraction/phase0-closeout/) with validated prompt, profile JSONs, generated holdout, and filled rubric. The validated extraction prompt (`v1-tsd-baseline`, verbatim from TSD §6.1) graduates to `src/lib/prompts/brand-voice.ts` in Phase 2 unchanged.
 - **Phase 1** — Foundation: Vite + React + TS scaffold, Supabase project + schema migrations, auth flow, app shell, i18n.
 - **Phase 2** — Client management + brand voice library UI. Phase 0's validated prompt wires in here.
 - **Phase 3** — Project / brief input, 3-variant generation orchestration, compliance check, variant review UI with Tiptap.
@@ -30,7 +30,7 @@ TSD §16 defines Phase 0 → Phase 7. Phase 0 is the load-bearing technical unce
 - **Phase 6** — Public feedback page, feedback submission, voice guideline delta generation, voice profile update.
 - **Phase 7** — Polish, edge cases, E2E tests, performance check.
 
-Currently in **Phase 0**. Sample data fetched for AstraZeneca KK (15 releases) and Chugai Pharmaceutical (15 releases); extraction is awaiting Anthropic API capacity to recover from a sustained overload event (2026-05-12).
+Currently **between Phase 0 and Phase 1**. Phase 0 passed on 2026-05-12 with the baseline TSD §6.1 prompt and no iteration. Sample data fetched for AstraZeneca KK (15 releases) and Chugai Pharmaceutical (15 releases); a third company (Takeda Japan, 3 of 15 releases) is partial and deferred. Closeout artifacts at [prototypes/brand-voice-extraction/phase0-closeout/](prototypes/brand-voice-extraction/phase0-closeout/).
 
 ---
 

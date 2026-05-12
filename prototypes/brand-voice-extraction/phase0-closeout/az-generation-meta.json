@@ -1,0 +1,14 @@
+{
+  "company": "astrazeneca-jp",
+  "tag": "holdout-202509241",
+  "model": "claude-sonnet-4-6",
+  "prompt_version": "v1-phase0-single-output",
+  "profile_path": "outputs/runs/2026-05-12T1011-tsd-baseline/astrazeneca-jp-profile.json",
+  "brief_path": "test-briefs/astrazeneca-jp/202509241-brief.json",
+  "content_type": "press_release",
+  "elapsed_ms": 31294,
+  "input_tokens": 1843,
+  "output_tokens": 2142,
+  "char_count": 2472,
+  "timestamp": "2026-05-12T20:25:57.155Z"
+}
