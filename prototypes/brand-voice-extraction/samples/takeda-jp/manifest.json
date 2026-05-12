@@ -1,0 +1,12 @@
+{
+  "slug": "takeda-jp",
+  "source_index": "https://www.takeda.com/jp/newsroom/local-newsreleases/",
+  "picked_at": "2026-05-12",
+  "picking_notes": "Initial 3 URLs supplied by user. Takeda's index page is a Next.js SPA with client-rendered release lists, so URLs are sourced manually rather than via the AEM-JSON trick that worked for AZ. More URLs needed to hit the 10-15 target.",
+  "still_needed": "10-12 more URLs to reach 13-15 total. Same site, any /jp/newsroom/press-releases/YYYY/<slug>/ or /jp/newsroom/newsreleases/YYYY/<slug>/ pattern works.",
+  "urls": [
+    { "url": "https://www.takeda.com/jp/newsroom/press-releases/2026/tak-881-pid-topline-results/", "date": "2026-05-07", "note": "TAK-881 PID 第2/3相トップライン (clinical)" },
+    { "url": "https://www.takeda.com/jp/newsroom/press-releases/2026/innovators-in-science-grand-prize-myriam-chalabi/", "note": "Innovators in Science Grand Prize (CSR/award)" },
+    { "url": "https://www.takeda.com/jp/newsroom/newsreleases/2026/zasocitinib-phase3-clinical-trial-results/", "note": "Zasocitinib 第3相結果 (clinical)" }
+  ]
+}

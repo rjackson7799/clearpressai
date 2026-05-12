@@ -1,0 +1,23 @@
+{
+  "slug": "astrazeneca-jp",
+  "source_index": "https://www.astrazeneca.co.jp/news/press-releases1.html",
+  "picked_at": "2026-05-12",
+  "picking_notes": "15 newest substantive product/clinical/regulatory/business releases. Skipped pure HR notices (役員人事, 社長就任), repeat event notices, and CSR-awards (PRIDE indices).",
+  "urls": [
+    { "url": "https://www.astrazeneca.co.jp/news/press-releases1/2026/202604141.html", "date": "2026-04-14", "note": "EMERALD-3 clinical (oncology)" },
+    { "url": "https://www.astrazeneca.co.jp/news/press-releases1/2026/202604091.html", "date": "2026-04-09", "note": "婦人科がん啓発セミナー (CSR/awareness)" },
+    { "url": "https://www.astrazeneca.co.jp/news/press-releases1/2026/202603301.html", "date": "2026-03-30", "note": "郡山COPD (gov collab)" },
+    { "url": "https://www.astrazeneca.co.jp/news/press-releases1/2026/202603041.html", "date": "2026-03-04", "note": "CKD公開講座 (event)" },
+    { "url": "https://www.astrazeneca.co.jp/news/press-releases1/2026/202602271.html", "date": "2026-02-27", "note": "フォシーガ流通移管 (business)" },
+    { "url": "https://www.astrazeneca.co.jp/news/press-releases1/2026/202602192.html", "date": "2026-02-19", "note": "サフネロー SLE承認 (regulatory)" },
+    { "url": "https://www.astrazeneca.co.jp/news/press-releases1/2026/202602191.html", "date": "2026-02-19", "note": "テゼスパイア CRSwNP承認 (regulatory)" },
+    { "url": "https://www.astrazeneca.co.jp/news/press-releases1/2026/202602172.html", "date": "2026-02-17", "note": "テゼスパイア EoE希少疾病指定 (regulatory)" },
+    { "url": "https://www.astrazeneca.co.jp/news/press-releases1/2026/202602171.html", "date": "2026-02-17", "note": "TSUBAKI試験開始 (clinical)" },
+    { "url": "https://www.astrazeneca.co.jp/news/press-releases1/2025/202512031.html", "date": "2025-12-03", "note": "イミフィンジ 周術期胃がん米国承認 (regulatory)" },
+    { "url": "https://www.astrazeneca.co.jp/news/press-releases1/2025/202511281.html", "date": "2025-11-28", "note": "メリーランド製造投資 (business/global)" },
+    { "url": "https://www.astrazeneca.co.jp/news/press-releases1/2025/202511211.html", "date": "2025-11-21", "note": "奈良COPD (gov collab)" },
+    { "url": "https://www.astrazeneca.co.jp/news/press-releases1/2025/202511051.html", "date": "2025-11-05", "note": "MATTERHORN試験 (clinical)" },
+    { "url": "https://www.astrazeneca.co.jp/news/press-releases1/2025/202510291.html", "date": "2025-10-29", "note": "新潟県連携協定 (gov collab)" },
+    { "url": "https://www.astrazeneca.co.jp/news/press-releases1/2025/202509191.html", "date": "2025-09-19", "note": "イミフィンジ 膀胱がん日本承認 (regulatory)" }
+  ]
+}

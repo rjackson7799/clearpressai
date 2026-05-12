@@ -1,0 +1,17 @@
+node_modules/
+.env
+
+# Probe/scratch files from procurement debugging
+.tmp-*
+
+# Generated extraction outputs — large, experimental, regenerable
+outputs/runs/
+
+# Press-release sample bodies are copyrighted material from the source
+# companies; don't commit them. Manifests (our URL lists + picking notes)
+# and .gitkeep are work product and DO get committed so the procurement
+# choices are reproducible.
+samples/**/*.txt
+samples/**/*.html
+test-briefs/**/*.txt
+test-briefs/**/*.html

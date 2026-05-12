@@ -1,0 +1,21 @@
+{
+  "name": "brand-voice-extraction-prototype",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Phase 0 prototype for ClearPress AI v1 — validates brand voice extraction quality before any production code is written. Discardable once Phase 2 picks up the validated prompt.",
+  "type": "module",
+  "scripts": {
+    "extract": "tsx src/extract-voice.ts",
+    "generate": "tsx src/generate-test-release.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.0",
+    "dotenv": "^16.4.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

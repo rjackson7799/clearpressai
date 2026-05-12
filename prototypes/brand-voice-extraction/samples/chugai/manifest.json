@@ -1,0 +1,23 @@
+{
+  "slug": "chugai",
+  "source_index": "https://www.chugai-pharm.co.jp/news/",
+  "picked_at": "2026-05-12",
+  "picking_notes": "15 newest substantive product/clinical/business releases pulled from Chugai's /news/ archive. Skipped pure quarterly disclosures and HR notices.",
+  "urls": [
+    { "url": "https://www.chugai-pharm.co.jp/news/detail/20260511153000_1587.html", "date": "2026-05-11", "note": "医薬品包装 WorldStar受賞 (sustainability/award)" },
+    { "url": "https://www.chugai-pharm.co.jp/news/detail/20260422163000_1578.html", "date": "2026-04-22", "note": "藤枝工場FJ3 ISPE 2026受賞 (manufacturing award)" },
+    { "url": "https://www.chugai-pharm.co.jp/news/detail/20260422153000_1582.html", "date": "2026-04-22", "note": "ロシュ ENSPRYNG MOGAD新データ (clinical, partnership)" },
+    { "url": "https://www.chugai-pharm.co.jp/news/detail/20260409153000_1574.html", "date": "2026-04-09", "note": "リツキサン共同販売終了 (business)" },
+    { "url": "https://www.chugai-pharm.co.jp/news/detail/20260406153000_1575.html", "date": "2026-04-06", "note": "ITP研究成果 Blood誌掲載 (R&D)" },
+    { "url": "https://www.chugai-pharm.co.jp/news/detail/20260402083000_1573.html", "date": "2026-04-02", "note": "Lilly Foundayo オルホルグリプロン (partner news)" },
+    { "url": "https://www.chugai-pharm.co.jp/news/detail/20260323153000_1569.html", "date": "2026-03-23", "note": "ルンスミオ+ポライビー DLBCL承認 (regulatory)" },
+    { "url": "https://www.chugai-pharm.co.jp/news/detail/20260323083000_1571.html", "date": "2026-03-23", "note": "GYM329 開発中止 (clinical/discontinuation)" },
+    { "url": "https://www.chugai-pharm.co.jp/news/detail/20260319163000_1570.html", "date": "2026-03-19", "note": "PDS ranibizumab 医療機器承認申請 (regulatory)" },
+    { "url": "https://www.chugai-pharm.co.jp/news/detail/20260310160000_1567.html", "date": "2026-03-10", "note": "ロシュ ギレデストラント persevERA (clinical, partnership)" },
+    { "url": "https://www.chugai-pharm.co.jp/news/detail/20260226210000_1565.html", "date": "2026-02-26", "note": "Lilly オルホルグリプロン ACHIEVE-3 (partner clinical)" },
+    { "url": "https://www.chugai-pharm.co.jp/news/detail/20260220113000_1564.html", "date": "2026-02-20", "note": "エレビジス DMD 国内発売 (launch)" },
+    { "url": "https://www.chugai-pharm.co.jp/news/detail/20260219160000_1562.html", "date": "2026-02-19", "note": "リツキサン AIHA 承認 (regulatory)" },
+    { "url": "https://www.chugai-pharm.co.jp/news/detail/20260210173000_1561.html", "date": "2026-02-10", "note": "Araris AraLinQ ADCライセンス (partnership/business)" },
+    { "url": "https://www.chugai-pharm.co.jp/news/detail/20260209170000_1559.html", "date": "2026-02-09", "note": "NXT007 血友病A 第I/II相 (clinical)" }
+  ]
+}
