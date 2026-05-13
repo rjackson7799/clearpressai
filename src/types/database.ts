@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -41,6 +41,7 @@ export type Database = {
     Tables: {
       audit_reports: {
         Row: {
+          assembled_snapshot: Json | null
           created_at: string
           created_by: string
           finalized_at: string | null
@@ -48,11 +49,15 @@ export type Database = {
           previous_version_id: string | null
           project_id: string
           report_id_display: string
+          report_snapshot: Json | null
           reviewer_comments: string | null
           status: string
-          version: string
+          version: string | null
+          version_major: number
+          version_minor: number
         }
         Insert: {
+          assembled_snapshot?: Json | null
           created_at?: string
           created_by: string
           finalized_at?: string | null
@@ -60,11 +65,15 @@ export type Database = {
           previous_version_id?: string | null
           project_id: string
           report_id_display: string
+          report_snapshot?: Json | null
           reviewer_comments?: string | null
           status?: string
-          version?: string
+          version?: string | null
+          version_major?: number
+          version_minor?: number
         }
         Update: {
+          assembled_snapshot?: Json | null
           created_at?: string
           created_by?: string
           finalized_at?: string | null
@@ -72,9 +81,12 @@ export type Database = {
           previous_version_id?: string | null
           project_id?: string
           report_id_display?: string
+          report_snapshot?: Json | null
           reviewer_comments?: string | null
           status?: string
-          version?: string
+          version?: string | null
+          version_major?: number
+          version_minor?: number
         }
         Relationships: [
           {
@@ -110,6 +122,7 @@ export type Database = {
       audit_signatures: {
         Row: {
           audit_report_id: string
+          canonical_payload: Json
           id: string
           signature_hash: string
           signed_at: string
@@ -119,6 +132,7 @@ export type Database = {
         }
         Insert: {
           audit_report_id: string
+          canonical_payload: Json
           id?: string
           signature_hash: string
           signed_at?: string
@@ -128,6 +142,7 @@ export type Database = {
         }
         Update: {
           audit_report_id?: string
+          canonical_payload?: Json
           id?: string
           signature_hash?: string
           signed_at?: string
@@ -945,6 +960,143 @@ export type Database = {
       }
     }
     Functions: {
+      _build_audit_snapshot: { Args: { p_project_id: string }; Returns: Json }
+      acknowledge_finding: {
+        Args: { p_finding_id: string }
+        Returns: {
+          created_at: string
+          explanation: string
+          id: string
+          paragraph_index: number | null
+          regulation_reference: string
+          resolution_status: string
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          source_text: string
+          suggested_correction: string | null
+          variant_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "compliance_findings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      apply_fix: {
+        Args: {
+          p_finding_id: string
+          p_new_body_html: string
+          p_new_body_text: string
+          p_new_char_count: number
+          p_new_reading_time_seconds: number
+        }
+        Returns: {
+          created_at: string
+          explanation: string
+          id: string
+          paragraph_index: number | null
+          regulation_reference: string
+          resolution_status: string
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          source_text: string
+          suggested_correction: string | null
+          variant_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "compliance_findings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      approve_variant: {
+        Args: { p_variant_id: string }
+        Returns: {
+          body_html: string | null
+          body_text: string
+          char_count: number
+          content_item_id: string
+          created_at: string
+          generation_params: Json | null
+          id: string
+          internal_approved: boolean
+          internal_approved_at: string | null
+          internal_approved_by: string | null
+          model_used: string
+          reading_time_seconds: number
+          updated_at: string
+          variant_index: number
+          variant_label: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "content_variants"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      assemble_audit_report: {
+        Args: { p_project_id: string }
+        Returns: {
+          assembled_snapshot: Json | null
+          created_at: string
+          created_by: string
+          finalized_at: string | null
+          id: string
+          previous_version_id: string | null
+          project_id: string
+          report_id_display: string
+          report_snapshot: Json | null
+          reviewer_comments: string | null
+          status: string
+          version: string | null
+          version_major: number
+          version_minor: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "audit_reports"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      finalize_audit_report: {
+        Args: {
+          p_audit_report_id: string
+          p_canonical_payload: Json
+          p_signature_hash: string
+        }
+        Returns: {
+          assembled_snapshot: Json | null
+          created_at: string
+          created_by: string
+          finalized_at: string | null
+          id: string
+          previous_version_id: string | null
+          project_id: string
+          report_id_display: string
+          report_snapshot: Json | null
+          reviewer_comments: string | null
+          status: string
+          version: string | null
+          version_major: number
+          version_minor: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "audit_reports"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      record_manual_review_started: {
+        Args: { p_project_id: string; p_variant_id: string }
+        Returns: undefined
+      }
       regenerate_variant: {
         Args: {
           p_body_text: string
@@ -976,6 +1128,31 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "content_variants"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      revise_audit_report: {
+        Args: { p_audit_report_id: string; p_comment: string }
+        Returns: {
+          assembled_snapshot: Json | null
+          created_at: string
+          created_by: string
+          finalized_at: string | null
+          id: string
+          previous_version_id: string | null
+          project_id: string
+          report_id_display: string
+          report_snapshot: Json | null
+          reviewer_comments: string | null
+          status: string
+          version: string | null
+          version_major: number
+          version_minor: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "audit_reports"
           isOneToOne: true
           isSetofReturn: false
         }
