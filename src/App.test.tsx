@@ -27,7 +27,7 @@ describe("App routing", () => {
         <App />
       </MemoryRouter>,
     );
-    expect(screen.getByText(/dashboard/i)).toBeInTheDocument();
+    expect(screen.getByText("Dashboard / ダッシュボード")).toBeInTheDocument();
   });
 
   it("renders login at /login", () => {
