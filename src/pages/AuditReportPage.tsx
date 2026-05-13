@@ -1,7 +1,12 @@
-import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { FileTextIcon, PrinterIcon, ShieldCheckIcon } from "lucide-react";
+import {
+  FileTextIcon,
+  GitBranchIcon,
+  PrinterIcon,
+  ShieldCheckIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,10 +15,12 @@ import { BilingualLabel } from "@/components/shared/BilingualLabel";
 import { AuditTrailTimeline } from "@/components/audit/AuditTrailTimeline";
 import { SignatureBlock } from "@/components/audit/SignatureBlock";
 import { SignAuditDialog } from "@/components/audit/SignAuditDialog";
+import { RequestRevisionDialog } from "@/components/audit/RequestRevisionDialog";
+import { VersionHistory } from "@/components/audit/VersionHistory";
 import { FindingsList } from "@/components/audit/FindingsList";
 import { useProject } from "@/hooks/useProjects";
 import { useClient } from "@/hooks/useClients";
-import { useLatestAuditReport } from "@/hooks/useLatestAuditReport";
+import { useAuditReports } from "@/hooks/useAuditReports";
 import { useAuditReport } from "@/hooks/useAuditReport";
 import { useAuditTrailEvents } from "@/hooks/useAuditTrailEvents";
 import { useCreateAuditReport } from "@/hooks/useCreateAuditReport";
@@ -37,21 +44,57 @@ const STATUS_VARIANT: Record<
 
 export default function AuditReportPage() {
   const { id: projectId } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedReportId = searchParams.get("reportId");
+
   const { data: project } = useProject(projectId);
   const { data: client } = useClient(project?.client_id);
-  const { data: latest, isLoading: latestLoading } =
-    useLatestAuditReport(projectId);
-  const { data: reportWithSigs } = useAuditReport(latest?.id);
+  const { data: allReports, isLoading: reportsLoading } =
+    useAuditReports(projectId);
   const { data: events } = useAuditTrailEvents(projectId);
   const create = useCreateAuditReport(projectId);
 
+  // Selected report = explicit ?reportId in URL OR the head of chain.
+  // useAuditReports orders newest-first by created_at, so [0] is the head.
+  const selectedReport = useMemo(() => {
+    if (!allReports || allReports.length === 0) return null;
+    if (requestedReportId) {
+      return (
+        allReports.find((r) => r.id === requestedReportId) ?? allReports[0]
+      );
+    }
+    return allReports[0];
+  }, [allReports, requestedReportId]);
+
+  const { data: reportWithSigs } = useAuditReport(selectedReport?.id);
+
   const { content, isLoading: contentLoading, source } =
-    useReportContent(latest);
+    useReportContent(selectedReport);
 
   const [signOpen, setSignOpen] = useState(false);
+  const [reviseOpen, setReviseOpen] = useState(false);
 
-  const status = (latest?.status ?? "draft") as AuditReportStatus;
-  const canSign = latest?.status === "draft" && (content?.variants.length ?? 0) > 0;
+  const status = (selectedReport?.status ?? "draft") as AuditReportStatus;
+  const canSign =
+    selectedReport?.status === "draft" &&
+    (content?.variants.length ?? 0) > 0;
+
+  // Revise gates (UX-side mirror of revise_audit_report RPC checks):
+  // selected must be finalized, must be head-of-chain (no successor),
+  // and no draft can exist in the project. RPC rejects with P0004 if
+  // any of these become false between render and click.
+  const isHeadOfChain =
+    selectedReport != null &&
+    !(allReports ?? []).some(
+      (r) => r.previous_version_id === selectedReport.id,
+    );
+  const draftInProgress = (allReports ?? []).find(
+    (r) => r.status === "draft",
+  );
+  const canRevise =
+    selectedReport?.status === "finalized" &&
+    isHeadOfChain &&
+    !draftInProgress;
 
   const handleCreate = () => {
     create.mutate(undefined, {
@@ -80,9 +123,9 @@ export default function AuditReportPage() {
               <BilingualLabel ja="レビューに戻る" en="Back to review" />
             </Link>
           </Button>
-          {latest && (latest.status === "finalized" || latest.status === "revised") && (
+          {selectedReport && (selectedReport.status === "finalized" || selectedReport.status === "revised") && (
             <Button variant="outline" asChild>
-              <Link to={`/print/audit-report/${latest.id}`} target="_blank">
+              <Link to={`/print/audit-report/${selectedReport.id}`} target="_blank">
                 <PrinterIcon className="size-4" />
                 <BilingualLabel ja="印刷" en="Print" />
               </Link>
@@ -91,9 +134,9 @@ export default function AuditReportPage() {
         </div>
       </div>
 
-      {latestLoading && <Skeleton className="h-32 w-full" />}
+      {reportsLoading && <Skeleton className="h-32 w-full" />}
 
-      {!latestLoading && !latest && (
+      {!reportsLoading && !selectedReport && (
         <div className="rounded-md border border-dashed p-8 text-center space-y-3">
           <FileTextIcon className="mx-auto size-8 text-muted-foreground" />
           <p>
@@ -119,11 +162,11 @@ export default function AuditReportPage() {
         </div>
       )}
 
-      {latest && (
+      {selectedReport && (
         <>
           <div className="rounded-md border bg-card p-4 flex items-start justify-between gap-3 flex-wrap">
             <div className="space-y-1">
-              <p className="font-mono text-sm">{latest.report_id_display}</p>
+              <p className="font-mono text-sm">{selectedReport.report_id_display}</p>
               <div className="flex items-center gap-2 text-sm flex-wrap">
                 <Badge variant={STATUS_VARIANT[status]}>
                   {STATUS_LABEL[status].ja}
@@ -132,21 +175,48 @@ export default function AuditReportPage() {
                   </span>
                 </Badge>
                 <span className="text-muted-foreground">
-                  <BilingualLabel ja="バージョン" en="Version" /> {latest.version}
+                  <BilingualLabel ja="バージョン" en="Version" /> {selectedReport.version}
                 </span>
-                {latest.finalized_at && (
+                {selectedReport.finalized_at && (
                   <span className="text-muted-foreground">
-                    {new Date(latest.finalized_at).toLocaleString()}
+                    {new Date(selectedReport.finalized_at).toLocaleString()}
                   </span>
                 )}
               </div>
             </div>
-            {canSign && (
-              <Button onClick={() => setSignOpen(true)}>
-                <ShieldCheckIcon className="size-4" />
-                <BilingualLabel ja="署名して確定" en="Sign & finalize" />
-              </Button>
-            )}
+            <div className="flex items-center gap-2 flex-wrap">
+              {canSign && (
+                <Button onClick={() => setSignOpen(true)}>
+                  <ShieldCheckIcon className="size-4" />
+                  <BilingualLabel ja="署名して確定" en="Sign & finalize" />
+                </Button>
+              )}
+              {canRevise && (
+                <Button
+                  variant="outline"
+                  onClick={() => setReviseOpen(true)}
+                >
+                  <GitBranchIcon className="size-4" />
+                  <BilingualLabel ja="改訂を要求" en="Request revision" />
+                </Button>
+              )}
+              {selectedReport.status === "finalized" &&
+                draftInProgress &&
+                draftInProgress.id !== selectedReport.id && (
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      setSearchParams({ reportId: draftInProgress.id })
+                    }
+                  >
+                    <GitBranchIcon className="size-4" />
+                    <BilingualLabel
+                      ja="改訂中の下書きを開く"
+                      en="Open revision in progress"
+                    />
+                  </Button>
+                )}
+            </div>
           </div>
 
           {source === "live" && status === "draft" && (
@@ -254,17 +324,34 @@ export default function AuditReportPage() {
             </h2>
             <AuditTrailTimeline events={events ?? []} />
           </section>
+
+          <VersionHistory
+            reports={allReports ?? []}
+            selectedReportId={selectedReport.id}
+            onSelect={(id) => setSearchParams({ reportId: id })}
+          />
         </>
       )}
 
       <SignAuditDialog
-        report={latest ?? undefined}
+        report={selectedReport ?? undefined}
         open={signOpen}
         onOpenChange={setSignOpen}
         projectId={projectId}
         onSigned={() =>
           toast.success("署名を完了しました / Audit report signed")
         }
+      />
+
+      <RequestRevisionDialog
+        report={selectedReport ?? undefined}
+        open={reviseOpen}
+        onOpenChange={setReviseOpen}
+        projectId={projectId}
+        onRevised={(newReport) => {
+          toast.success("改訂版を作成しました / Revision created");
+          setSearchParams({ reportId: newReport.id });
+        }}
       />
     </div>
   );
