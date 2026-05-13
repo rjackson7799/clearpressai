@@ -118,6 +118,19 @@
     "confirmSampleDeleteTitle": "サンプルを削除しますか？",
     "confirmSampleDeleteBody": "この操作は取り消せません。"
   },
+  "projects": {
+    "title": "プロジェクト",
+    "newProject": "新規プロジェクト"
+  },
+  "brief": {
+    "title": "ブリーフ"
+  },
+  "variant_review": {
+    "title": "バリアント レビュー"
+  },
+  "compliance": {
+    "title": "コンプライアンス"
+  },
   "guidelines": {
     "title": "ブランドガイドライン",
     "addAnnotation": "内部メモを追加",

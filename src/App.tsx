@@ -11,6 +11,9 @@ import FeedbackPage from "@/pages/FeedbackPage";
 import ClientsListPage from "@/pages/ClientsListPage";
 import ClientNewPage from "@/pages/ClientNewPage";
 import ClientDetailPage from "@/pages/ClientDetailPage";
+import ProjectsListPage from "@/pages/ProjectsListPage";
+import NewProjectPage from "@/pages/NewProjectPage";
+import VariantReviewPage from "@/pages/VariantReviewPage";
 
 export default function App() {
   return (
@@ -26,6 +29,9 @@ export default function App() {
             <Route path="/clients" element={<ClientsListPage />} />
             <Route path="/clients/new" element={<ClientNewPage />} />
             <Route path="/clients/:id" element={<ClientDetailPage />} />
+            <Route path="/projects" element={<ProjectsListPage />} />
+            <Route path="/projects/new" element={<NewProjectPage />} />
+            <Route path="/projects/:id/review" element={<VariantReviewPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>

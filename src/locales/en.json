@@ -118,6 +118,19 @@
     "confirmSampleDeleteTitle": "Delete this sample?",
     "confirmSampleDeleteBody": "This action cannot be undone."
   },
+  "projects": {
+    "title": "Projects",
+    "newProject": "New Project"
+  },
+  "brief": {
+    "title": "Brief"
+  },
+  "variant_review": {
+    "title": "Variant Review"
+  },
+  "compliance": {
+    "title": "Compliance"
+  },
   "guidelines": {
     "title": "Brand Guidelines",
     "addAnnotation": "Add internal note",
