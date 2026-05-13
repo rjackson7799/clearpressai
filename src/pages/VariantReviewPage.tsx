@@ -193,11 +193,18 @@ export default function VariantReviewPage() {
           </div>
           <h1 className="text-2xl">{project?.name ?? '—'}</h1>
         </div>
-        <Button variant="outline" asChild>
-          <Link to="/projects">
-            <BilingualLabel ja="一覧に戻る" en="Back" />
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <Link to={`/projects/${projectId}/audit`}>
+              <BilingualLabel ja="監査レポート" en="Audit report" />
+            </Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link to="/projects">
+              <BilingualLabel ja="一覧に戻る" en="Back" />
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {generating && (

@@ -14,6 +14,7 @@ import ClientDetailPage from "@/pages/ClientDetailPage";
 import ProjectsListPage from "@/pages/ProjectsListPage";
 import NewProjectPage from "@/pages/NewProjectPage";
 import VariantReviewPage from "@/pages/VariantReviewPage";
+import AuditReportPage from "@/pages/AuditReportPage";
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
             <Route path="/projects" element={<ProjectsListPage />} />
             <Route path="/projects/new" element={<NewProjectPage />} />
             <Route path="/projects/:id/review" element={<VariantReviewPage />} />
+            <Route path="/projects/:id/audit" element={<AuditReportPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>
