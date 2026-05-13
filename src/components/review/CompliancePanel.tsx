@@ -13,28 +13,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { BilingualLabel } from '@/components/shared/BilingualLabel';
-import type {
-  ComplianceSeverity,
-  ContentVariant,
-} from '@/types/domain';
+import {
+  SEVERITY_ORDER,
+  SEVERITY_LABEL,
+  SEVERITY_VARIANT,
+} from '@/lib/severity';
+import type { ComplianceSeverity, ContentVariant } from '@/types/domain';
 import type { ComplianceFindingWithStale } from '@/hooks/useComplianceFindings';
-
-const SEVERITY_ORDER: ComplianceSeverity[] = ['blocker', 'warning', 'note'];
-
-const SEVERITY_LABEL: Record<ComplianceSeverity, { ja: string; en: string }> = {
-  blocker: { ja: '阻止', en: 'Blocker' },
-  warning: { ja: '警告', en: 'Warning' },
-  note: { ja: '注意', en: 'Note' },
-};
-
-const SEVERITY_VARIANT: Record<
-  ComplianceSeverity,
-  'destructive' | 'default' | 'secondary'
-> = {
-  blocker: 'destructive',
-  warning: 'default',
-  note: 'secondary',
-};
 
 export interface CompliancePanelProps {
   open: boolean;
