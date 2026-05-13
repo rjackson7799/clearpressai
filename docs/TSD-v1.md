@@ -127,9 +127,9 @@ Pin the specific Claude model in the codebase **as a constant**, not as a friend
 ```typescript
 // src/config/ai.ts
 export const CLAUDE_MODELS = {
-  brand_voice_extraction: 'claude-sonnet-4-5-20251022',
-  variant_generation: 'claude-sonnet-4-5-20251022',
-  compliance_check: 'claude-sonnet-4-5-20251022',
+  brand_voice_extraction: 'claude-sonnet-4-6',
+  variant_generation: 'claude-sonnet-4-6',
+  compliance_check: 'claude-sonnet-4-6',
   voice_guideline_delta: 'claude-haiku-4-5-20251001',
 } as const;
 ```
@@ -433,7 +433,7 @@ create table content_variants (
   internal_approved boolean not null default false,
   internal_approved_by uuid references users(id),
   internal_approved_at timestamptz,
-  model_used text not null,                             -- e.g., "claude-sonnet-4-5-20251022"
+  model_used text not null,                             -- e.g., "claude-sonnet-4-6"
   generation_params jsonb,                              -- temperature, max_tokens, system prompt hash
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
