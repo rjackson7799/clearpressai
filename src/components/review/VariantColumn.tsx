@@ -26,6 +26,10 @@ export interface VariantColumnProps {
   onOpenCompliance: () => void;
   approving?: boolean;
   regenerating?: boolean;
+  // I2 corollary: when the project's latest audit report is finalized, the
+  // column locks. Editor is read-only and approve/regenerate are disabled
+  // until the user requests a revision on the audit page.
+  locked?: boolean;
 }
 
 export function VariantColumn({
@@ -37,6 +41,7 @@ export function VariantColumn({
   onOpenCompliance,
   approving,
   regenerating,
+  locked = false,
 }: VariantColumnProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -67,7 +72,7 @@ export function VariantColumn({
             type="button"
             variant={variant.internal_approved ? 'outline' : 'default'}
             size="sm"
-            disabled={approving || dirty}
+            disabled={approving || dirty || locked}
             onClick={() => onApproveToggle(!variant.internal_approved)}
           >
             {variant.internal_approved ? (
@@ -80,7 +85,7 @@ export function VariantColumn({
             type="button"
             variant="ghost"
             size="sm"
-            disabled={regenerating || dirty}
+            disabled={regenerating || dirty || locked}
             onClick={() => setConfirmOpen(true)}
           >
             <RefreshCwIcon className="size-3" />
@@ -95,6 +100,7 @@ export function VariantColumn({
           initialBodyText={variant.body_text}
           onSave={onSaveBody}
           onDirtyChange={setDirty}
+          readOnly={locked}
         />
       </div>
 

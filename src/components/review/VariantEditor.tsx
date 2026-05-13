@@ -11,6 +11,7 @@ export interface VariantEditorProps {
   initialBodyText: string;
   onSave: (body: string) => Promise<void> | void;
   onDirtyChange?: (dirty: boolean) => void;
+  readOnly?: boolean;
 }
 
 function tiptapBodyToText(html: string): string {
@@ -45,6 +46,7 @@ export function VariantEditor({
   initialBodyText,
   onSave,
   onDirtyChange,
+  readOnly = false,
 }: VariantEditorProps) {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -55,6 +57,7 @@ export function VariantEditor({
   const editor = useEditor({
     extensions: [StarterKit, Placeholder.configure({ placeholder: '' })],
     content: textToTiptapDoc(initialBodyText),
+    editable: !readOnly,
     editorProps: {
       attributes: {
         class:
@@ -80,7 +83,7 @@ export function VariantEditor({
   }, [editor, onSave, onDirtyChange]);
 
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || readOnly) return;
     const handler = () => {
       const body = tiptapBodyToText(editor.getHTML());
       const isDirty = body !== latestBodyRef.current;
@@ -105,7 +108,7 @@ export function VariantEditor({
         saveTimerRef.current = null;
       }
     };
-  }, [editor, dirty, commitSave, onDirtyChange]);
+  }, [editor, dirty, commitSave, onDirtyChange, readOnly]);
 
   if (!editor) {
     return <div className="min-h-[12rem]" />;
@@ -114,32 +117,34 @@ export function VariantEditor({
   return (
     <div className="space-y-2">
       <EditorContent editor={editor} />
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>
-          {saving ? (
-            <BilingualLabel ja="保存中…" en="Saving…" />
-          ) : dirty ? (
-            <BilingualLabel ja="未保存の変更があります" en="Unsaved changes" />
-          ) : savedAt ? (
-            <BilingualLabel ja="保存済" en="Saved" />
-          ) : null}
-        </span>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={!dirty || saving}
-          onClick={() => {
-            if (saveTimerRef.current !== null) {
-              window.clearTimeout(saveTimerRef.current);
-              saveTimerRef.current = null;
-            }
-            void commitSave();
-          }}
-        >
-          <BilingualLabel ja="保存" en="Save" />
-        </Button>
-      </div>
+      {!readOnly && (
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>
+            {saving ? (
+              <BilingualLabel ja="保存中…" en="Saving…" />
+            ) : dirty ? (
+              <BilingualLabel ja="未保存の変更があります" en="Unsaved changes" />
+            ) : savedAt ? (
+              <BilingualLabel ja="保存済" en="Saved" />
+            ) : null}
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={!dirty || saving}
+            onClick={() => {
+              if (saveTimerRef.current !== null) {
+                window.clearTimeout(saveTimerRef.current);
+                saveTimerRef.current = null;
+              }
+              void commitSave();
+            }}
+          >
+            <BilingualLabel ja="保存" en="Save" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

@@ -23,6 +23,9 @@ import { useApplyFix } from '@/hooks/useApplyFix';
 import { useAcknowledgeFinding } from '@/hooks/useAcknowledgeFinding';
 import { useReopenFinding } from '@/hooks/useReopenFinding';
 import { useRecordManualReviewStarted } from '@/hooks/useRecordManualReviewStarted';
+import { useLatestAuditReport } from '@/hooks/useLatestAuditReport';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { LockIcon } from 'lucide-react';
 
 export default function VariantReviewPage() {
   const { id: projectId } = useParams<{ id: string }>();
@@ -40,6 +43,12 @@ export default function VariantReviewPage() {
   const acknowledgeFinding = useAcknowledgeFinding(contentItem?.id);
   const reopenFinding = useReopenFinding(contentItem?.id);
   const { mutate: recordReview } = useRecordManualReviewStarted();
+  const { data: latestAuditReport } = useLatestAuditReport(projectId);
+
+  // I2 corollary lock: latest audit report 'finalized' means content is
+  // immutable until a revision is requested on the audit page. Draft
+  // revisions (V1.1 in progress) keep editing unlocked.
+  const isLocked = latestAuditReport?.status === 'finalized';
 
   const { data: findingsByVariant } = useComplianceFindings(
     contentItem?.id,
@@ -207,6 +216,24 @@ export default function VariantReviewPage() {
         </div>
       </div>
 
+      {isLocked && (
+        <Alert>
+          <LockIcon className="size-4" />
+          <AlertTitle>
+            <BilingualLabel
+              ja="編集ロック中"
+              en="Editing locked"
+            />
+          </AlertTitle>
+          <AlertDescription>
+            <BilingualLabel
+              ja="本案件は確定済の監査レポートに紐づいています。修正には改訂が必要です。"
+              en="This project is tied to a finalized audit report. To edit, request a revision."
+            />
+          </AlertDescription>
+        </Alert>
+      )}
+
       {generating && (
         <div className="space-y-3">
           <Progress />
@@ -256,6 +283,7 @@ export default function VariantReviewPage() {
                 findings={findingsByVariant?.[variant.id] ?? []}
                 approving={approveVariant.isPending}
                 regenerating={generateVariants.isPending}
+                locked={isLocked}
                 onOpenCompliance={() => {
                   setPanelVariantId(variant.id);
                   setPanelOpen(true);
