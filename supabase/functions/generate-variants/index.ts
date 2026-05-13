@@ -36,6 +36,7 @@ import {
   createSupabaseFromRequest,
   getUserIdFromAuth,
 } from '../_shared/auth.ts';
+import { recordAuditEvent } from '../_shared/audit-events.ts';
 
 const InputSchema = z.object({
   content_item_id: z.string().uuid(),
@@ -223,6 +224,17 @@ Deno.serve(async (req: Request) => {
   const generatedAt = new Date().toISOString();
   const anthropic = new Anthropic({ apiKey: anthropicKey, maxRetries: 6 });
 
+  // Pre-fetch actor name once so the parallel audit writes below don't each
+  // round-trip to the users table. Non-critical — null is fine.
+  const { data: actorRow } = await supabase
+    .from('users')
+    .select('full_name')
+    .eq('id', userId)
+    .maybeSingle();
+  const actorNameSnapshot = actorRow?.full_name ?? null;
+
+  const isRegeneration = variant_index !== undefined;
+
   try {
     const variantPromises = indicesToGenerate.map(async (index) => {
       const directive = VARIATION_DIRECTIVES[variationAxis][index];
@@ -291,6 +303,27 @@ Deno.serve(async (req: Request) => {
       if (rpcError) {
         throw new Error(`variant ${index} RPC failed: ${rpcError.message}`);
       }
+
+      // T4: live audit event. See _shared/audit-events.ts header for the
+      // atomicity caveat (RPC commits before this insert).
+      await recordAuditEvent(supabase, {
+        projectId: project.id,
+        eventType: 'variant_generated',
+        actorId: userId,
+        actorNameSnapshot,
+        modelUsed: response.model,
+        details: {
+          variant_id: (variant as { id: string }).id,
+          content_item_id: content_item_id,
+          variant_index: index,
+          is_regeneration: isRegeneration,
+          brief_hash: briefHash,
+          sub_type_classified,
+          length_norm_fallback: lengthNormFallback,
+          anthropic_input_tokens: response.usage.input_tokens,
+          anthropic_output_tokens: response.usage.output_tokens,
+        },
+      });
 
       return variant;
     });

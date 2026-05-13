@@ -31,6 +31,7 @@ import {
   AuthError,
   createSupabaseFromRequest,
 } from '../_shared/auth.ts';
+import { recordAuditEvent } from '../_shared/audit-events.ts';
 
 const InputSchema = z.object({
   variant_ids: z.array(z.string().uuid()).min(1).max(3),
@@ -111,7 +112,7 @@ Deno.serve(async (req: Request) => {
         const { data: variantRow, error: variantError } = await supabase
           .from('content_variants')
           .select(
-            'id, body_text, content_items!inner(content_type, content_sub_type, projects!inner(client_id))',
+            'id, body_text, content_items!inner(project_id, content_type, content_sub_type, projects!inner(client_id))',
           )
           .eq('id', variantId)
           .single();
@@ -123,11 +124,13 @@ Deno.serve(async (req: Request) => {
         }
 
         const contentItem = variantRow.content_items as unknown as {
+          project_id: string;
           content_type: string;
           content_sub_type: string;
           projects: { client_id: string };
         };
         const clientId = contentItem.projects.client_id;
+        const projectId = contentItem.project_id;
 
         const { data: voiceProfile, error: voiceProfileError } = await supabase
           .from('brand_voice_profiles')
@@ -222,16 +225,21 @@ Deno.serve(async (req: Request) => {
         ];
 
         // 4. Delete prior findings for this variant + insert merged set.
-        const { error: deleteError } = await supabase
+        // Capturing the cleared-row count via .select('id') lets us tell a
+        // recheck from a first check for the T4 audit event below.
+        const { data: clearedRows, error: deleteError } = await supabase
           .from('compliance_findings')
           .delete()
-          .eq('variant_id', variantId);
+          .eq('variant_id', variantId)
+          .select('id');
 
         if (deleteError) {
           throw new Error(
             `Delete prior findings failed for ${variantId}: ${deleteError.message}`,
           );
         }
+
+        const priorFindingsCount = clearedRows?.length ?? 0;
 
         const rowsToInsert = merged.map((f) => ({
           variant_id: variantId,
@@ -260,6 +268,24 @@ Deno.serve(async (req: Request) => {
           }
           insertedRows = (inserted ?? []) as ComplianceFinding[];
         }
+
+        // T4: live audit event. compliance_rechecked when prior findings
+        // were cleared, compliance_checked when this is the first run.
+        // Counts come from the deterministic / LLM sources (pre-merge)
+        // so they stay accurate even when the merged set is empty.
+        await recordAuditEvent(supabase, {
+          projectId,
+          eventType:
+            priorFindingsCount > 0 ? 'compliance_rechecked' : 'compliance_checked',
+          modelUsed: llmResponse.model,
+          details: {
+            variant_id: variantId,
+            deterministic_finding_count: deterministicFindings.length,
+            llm_finding_count: llmFindingsTagged.length,
+            total_finding_count: merged.length,
+            prior_findings_cleared: priorFindingsCount,
+          },
+        });
 
         return {
           variantId,
