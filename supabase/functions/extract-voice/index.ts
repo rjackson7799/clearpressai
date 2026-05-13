@@ -12,7 +12,6 @@
  * `last_extracted_at`, and resets `user_edited = false` on every run.
  */
 
-import { createClient } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import {
@@ -22,6 +21,13 @@ import {
   EXTRACTION_PROMPT_VERSION,
   buildExtractionUserMessage,
 } from './_prompt.ts';
+import { handlePreflight } from '../_shared/cors.ts';
+import { jsonResponse, jsonError } from '../_shared/errors.ts';
+import {
+  AuthError,
+  createSupabaseFromRequest,
+  requireAuthorization,
+} from '../_shared/auth.ts';
 
 const MIN_SAMPLE_CHARS = 500;
 const MAX_TOTAL_INPUT_CHARS = 180_000;
@@ -31,38 +37,9 @@ const InputSchema = z.object({
   sample_ids: z.array(z.string().uuid()).min(5).max(20),
 });
 
-interface ApiError {
-  code:
-    | 'permission_denied'
-    | 'validation_error'
-    | 'not_found'
-    | 'ai_error'
-    | 'internal_error';
-  message: string;
-  details?: unknown;
-}
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
-};
-
-function jsonResponse(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-}
-
-function jsonError(status: number, error: ApiError): Response {
-  return jsonResponse(status, { data: null, error });
-}
-
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  const preflight = handlePreflight(req);
+  if (preflight) return preflight;
 
   if (req.method !== 'POST') {
     return jsonError(405, {
@@ -71,28 +48,35 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) {
-    return jsonError(401, {
-      code: 'permission_denied',
-      message: 'Missing Authorization header',
-    });
+  try {
+    requireAuthorization(req);
+  } catch (e) {
+    if (e instanceof AuthError) {
+      return jsonError(401, { code: 'permission_denied', message: e.message });
+    }
+    throw e;
   }
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
   const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
-
-  if (!supabaseUrl || !supabaseAnonKey || !anthropicKey) {
+  if (!anthropicKey) {
     return jsonError(500, {
       code: 'internal_error',
-      message: 'Missing required environment variables',
+      message: 'Missing ANTHROPIC_API_KEY',
     });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: authHeader } },
-  });
+  let supabase;
+  try {
+    supabase = createSupabaseFromRequest(req);
+  } catch (e) {
+    if (e instanceof AuthError) {
+      return jsonError(401, { code: 'permission_denied', message: e.message });
+    }
+    return jsonError(500, {
+      code: 'internal_error',
+      message: (e as Error).message,
+    });
+  }
 
   let rawBody: unknown;
   try {
