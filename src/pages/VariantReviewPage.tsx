@@ -19,7 +19,10 @@ import {
   useComplianceFindings,
   type ComplianceFindingWithStale,
 } from '@/hooks/useComplianceFindings';
-import { useResolveFinding } from '@/hooks/useResolveFinding';
+import { useApplyFix } from '@/hooks/useApplyFix';
+import { useAcknowledgeFinding } from '@/hooks/useAcknowledgeFinding';
+import { useReopenFinding } from '@/hooks/useReopenFinding';
+import { useRecordManualReviewStarted } from '@/hooks/useRecordManualReviewStarted';
 
 export default function VariantReviewPage() {
   const { id: projectId } = useParams<{ id: string }>();
@@ -33,7 +36,10 @@ export default function VariantReviewPage() {
   const approveVariant = useApproveVariant(contentItem?.id);
   const updateVariant = useUpdateVariant(contentItem?.id);
   const complianceCheck = useComplianceCheck(contentItem?.id);
-  const resolveFinding = useResolveFinding(contentItem?.id);
+  const applyFix = useApplyFix(contentItem?.id);
+  const acknowledgeFinding = useAcknowledgeFinding(contentItem?.id);
+  const reopenFinding = useReopenFinding(contentItem?.id);
+  const { mutate: recordReview } = useRecordManualReviewStarted();
 
   const { data: findingsByVariant } = useComplianceFindings(
     contentItem?.id,
@@ -93,26 +99,33 @@ export default function VariantReviewPage() {
     if (!variant) return;
     if (!finding.suggested_correction) return;
 
+    const found = variant.body_text.includes(finding.source_text);
+    if (!found) {
+      // Behavior change vs. Phase 3: when the source_text isn't in the body
+      // we no longer silently mark the finding 'fixed' — the apply_fix RPC
+      // is one atomic gesture and skipping the body edit while flipping
+      // status would be dishonest.
+      toast.warning(
+        '本文に該当箇所が見つかりません / Source text not found in body',
+      );
+      return;
+    }
+
     setResolvingFindingId(finding.id);
     try {
-      const found = variant.body_text.includes(finding.source_text);
-      if (!found) {
-        toast.warning(
-          '本文に該当箇所が見つかりません / Source text not found in body',
-        );
-      } else {
-        const next = variant.body_text.replace(
-          finding.source_text,
-          finding.suggested_correction,
-        );
-        await updateVariant.mutateAsync({
-          variantId,
-          body_text: next,
-        });
-      }
-      await resolveFinding.mutateAsync({
+      const next = variant.body_text.replace(
+        finding.source_text,
+        finding.suggested_correction,
+      );
+      const newCharCount = Array.from(next).length;
+      const newReadingTimeSeconds = Math.ceil(newCharCount / 6);
+      await applyFix.mutateAsync({
         findingId: finding.id,
-        status: 'fixed',
+        variantId,
+        newBodyText: next,
+        newBodyHtml: variant.body_html ?? null,
+        newCharCount,
+        newReadingTimeSeconds,
       });
       toast.success('修正を適用しました / Fix applied');
     } catch (e) {
@@ -135,8 +148,8 @@ export default function VariantReviewPage() {
 
   const handleAcknowledge = (findingId: string) => {
     setResolvingFindingId(findingId);
-    resolveFinding.mutate(
-      { findingId, status: 'acknowledged' },
+    acknowledgeFinding.mutate(
+      { findingId },
       {
         onError: (e) => toast.error(e.message),
         onSettled: () => setResolvingFindingId(null),
@@ -146,14 +159,27 @@ export default function VariantReviewPage() {
 
   const handleReopen = (findingId: string) => {
     setResolvingFindingId(findingId);
-    resolveFinding.mutate(
-      { findingId, status: 'unresolved' },
+    reopenFinding.mutate(
+      { findingId },
       {
         onError: (e) => toast.error(e.message),
         onSettled: () => setResolvingFindingId(null),
       },
     );
   };
+
+  // Fire `manual_review_started` once per (project, variant, user) tuple.
+  // The RPC is idempotent server-side so a client-side Set is a courtesy
+  // to avoid noise, not a correctness guard.
+  const firedReviewRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!projectId) return;
+    for (const v of sortedVariants) {
+      if (firedReviewRef.current.has(v.id)) continue;
+      firedReviewRef.current.add(v.id);
+      recordReview({ projectId, variantId: v.id });
+    }
+  }, [projectId, sortedVariants, recordReview]);
 
   return (
     <div className="space-y-6">
