@@ -25,6 +25,11 @@ import {
   useDeleteClient,
   useUpdateClient,
 } from "@/hooks/useClients";
+import { ReadinessGate } from "@/components/brand-voice/ReadinessGate";
+import { SampleUploader } from "@/components/brand-voice/SampleUploader";
+import { SampleList } from "@/components/brand-voice/SampleList";
+import { VoiceProfileEditor } from "@/components/brand-voice/VoiceProfileEditor";
+import { GuidelinesPanel } from "@/components/brand-voice/GuidelinesPanel";
 
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -147,12 +152,15 @@ export default function ClientDetailPage() {
           )}
         </TabsContent>
 
-        <TabsContent value="brandVoice" className="pt-6">
-          <BrandVoiceTabPlaceholder />
+        <TabsContent value="brandVoice" className="pt-6 space-y-6">
+          <ReadinessGate clientId={id} />
+          <SampleUploader clientId={id} />
+          <SampleList clientId={id} />
+          <VoiceProfileEditor clientId={id} />
         </TabsContent>
 
         <TabsContent value="guidelines" className="pt-6">
-          <GuidelinesTabPlaceholder />
+          <GuidelinesPanel clientId={id} />
         </TabsContent>
       </Tabs>
 
@@ -216,18 +224,3 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-function BrandVoiceTabPlaceholder() {
-  return (
-    <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
-      Brand Voice components are wired in T18.
-    </div>
-  );
-}
-
-function GuidelinesTabPlaceholder() {
-  return (
-    <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
-      Guidelines panel is wired in T18.
-    </div>
-  );
-}
