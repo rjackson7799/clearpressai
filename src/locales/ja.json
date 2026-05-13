@@ -123,7 +123,15 @@
     "newProject": "新規プロジェクト"
   },
   "brief": {
-    "title": "ブリーフ"
+    "title": "ブリーフ",
+    "errors": {
+      "clientRequired": "クライアントを選択してください",
+      "nameRequired": "プロジェクト名を入力してください",
+      "briefTooShort": "ブリーフは50文字以上で入力してください",
+      "quoteNameRequired": "氏名を入力してください",
+      "quoteTitleRequired": "役職を入力してください",
+      "quoteRequired": "発言を入力してください"
+    }
   },
   "variant_review": {
     "title": "バリアント レビュー"

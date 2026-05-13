@@ -123,7 +123,15 @@
     "newProject": "New Project"
   },
   "brief": {
-    "title": "Brief"
+    "title": "Brief",
+    "errors": {
+      "clientRequired": "Select a client",
+      "nameRequired": "Project name is required",
+      "briefTooShort": "Brief must be at least 50 characters",
+      "quoteNameRequired": "Name is required",
+      "quoteTitleRequired": "Title is required",
+      "quoteRequired": "Quote text is required"
+    }
   },
   "variant_review": {
     "title": "Variant Review"
