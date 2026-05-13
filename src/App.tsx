@@ -15,6 +15,7 @@ import ProjectsListPage from "@/pages/ProjectsListPage";
 import NewProjectPage from "@/pages/NewProjectPage";
 import VariantReviewPage from "@/pages/VariantReviewPage";
 import AuditReportPage from "@/pages/AuditReportPage";
+import PrintAuditReportPage from "@/pages/PrintAuditReportPage";
 
 export default function App() {
   return (
@@ -25,6 +26,12 @@ export default function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/f/:token" element={<FeedbackPage />} />
         <Route element={<ProtectedRoute />}>
+          {/* Print routes deliberately render outside AppShell so the
+              sidebar/header don't appear in the PDF output. */}
+          <Route
+            path="/print/audit-report/:id"
+            element={<PrintAuditReportPage />}
+          />
           <Route element={<AppShell />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/clients" element={<ClientsListPage />} />
