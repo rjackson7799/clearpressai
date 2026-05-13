@@ -95,6 +95,13 @@ export type Database = {
             foreignKeyName: "audit_reports_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "project_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_reports_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
@@ -194,6 +201,13 @@ export type Database = {
             foreignKeyName: "audit_trail_events_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "project_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_trail_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
@@ -234,6 +248,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brand_voice_guidelines_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "project_summary"
+            referencedColumns: ["client_id"]
           },
         ]
       }
@@ -300,6 +321,13 @@ export type Database = {
             referencedRelation: "clients"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "brand_voice_profiles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "project_summary"
+            referencedColumns: ["client_id"]
+          },
         ]
       }
       brand_voice_samples: {
@@ -343,6 +371,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brand_voice_samples_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "project_summary"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "brand_voice_samples_uploaded_by_fkey"
@@ -515,6 +550,7 @@ export type Database = {
           brief_free_text: string
           brief_key_messages: Json
           brief_quotes: Json
+          content_sub_type: string
           content_type: string
           created_at: string
           id: string
@@ -528,6 +564,7 @@ export type Database = {
           brief_free_text: string
           brief_key_messages?: Json
           brief_quotes?: Json
+          content_sub_type?: string
           content_type: string
           created_at?: string
           id?: string
@@ -541,6 +578,7 @@ export type Database = {
           brief_free_text?: string
           brief_key_messages?: Json
           brief_quotes?: Json
+          content_sub_type?: string
           content_type?: string
           created_at?: string
           id?: string
@@ -549,6 +587,13 @@ export type Database = {
           variation_axis?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "content_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_summary"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "content_items_project_id_fkey"
             columns: ["project_id"]
@@ -619,6 +664,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "content_variants_content_item_id_fkey"
+            columns: ["content_item_id"]
+            isOneToOne: false
+            referencedRelation: "project_summary"
+            referencedColumns: ["content_item_id"]
+          },
+          {
             foreignKeyName: "content_variants_internal_approved_by_fkey"
             columns: ["internal_approved_by"]
             isOneToOne: false
@@ -680,6 +732,13 @@ export type Database = {
           variant_ids_attached?: Json
         }
         Relationships: [
+          {
+            foreignKeyName: "deliveries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_summary"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "deliveries_project_id_fkey"
             columns: ["project_id"]
@@ -777,6 +836,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "project_summary"
+            referencedColumns: ["client_id"]
+          },
+          {
             foreignKeyName: "projects_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -858,10 +924,62 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      project_summary: {
+        Row: {
+          client_id: string | null
+          client_name: string | null
+          content_item_id: string | null
+          content_sub_type: string | null
+          content_type: string | null
+          created_at: string | null
+          deadline: string | null
+          id: string | null
+          last_generated_at: string | null
+          name: string | null
+          status: string | null
+          urgency: string | null
+          variants_approved: number | null
+          variants_total: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      regenerate_variant: {
+        Args: {
+          p_body_text: string
+          p_char_count: number
+          p_content_item_id: string
+          p_generation_params: Json
+          p_model_used: string
+          p_reading_time_seconds: number
+          p_variant_index: number
+          p_variant_label: string
+        }
+        Returns: {
+          body_html: string | null
+          body_text: string
+          char_count: number
+          content_item_id: string
+          created_at: string
+          generation_params: Json | null
+          id: string
+          internal_approved: boolean
+          internal_approved_at: string | null
+          internal_approved_by: string | null
+          model_used: string
+          reading_time_seconds: number
+          updated_at: string
+          variant_index: number
+          variant_label: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "content_variants"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       [_ in never]: never
