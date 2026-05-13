@@ -8,6 +8,9 @@ import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import DashboardPage from "@/pages/DashboardPage";
 import SettingsPage from "@/pages/SettingsPage";
 import FeedbackPage from "@/pages/FeedbackPage";
+import ClientsListPage from "@/pages/ClientsListPage";
+import ClientNewPage from "@/pages/ClientNewPage";
+import ClientDetailPage from "@/pages/ClientDetailPage";
 
 export default function App() {
   return (
@@ -20,6 +23,9 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
             <Route path="/" element={<DashboardPage />} />
+            <Route path="/clients" element={<ClientsListPage />} />
+            <Route path="/clients/new" element={<ClientNewPage />} />
+            <Route path="/clients/:id" element={<ClientDetailPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>
