@@ -12,6 +12,7 @@ import { useClient } from '@/hooks/useClients';
 import { useVariantsForContentItem } from '@/hooks/useVariants';
 import { useGenerateVariants } from '@/hooks/useGenerateVariants';
 import { useApproveVariant } from '@/hooks/useApproveVariant';
+import { useUpdateVariant } from '@/hooks/useUpdateVariant';
 
 export default function VariantReviewPage() {
   const { id: projectId } = useParams<{ id: string }>();
@@ -23,6 +24,7 @@ export default function VariantReviewPage() {
 
   const generateVariants = useGenerateVariants(contentItem?.id);
   const approveVariant = useApproveVariant(contentItem?.id);
+  const updateVariant = useUpdateVariant(contentItem?.id);
 
   const autoFiredRef = useRef(false);
 
@@ -110,6 +112,17 @@ export default function VariantReviewPage() {
               variant={variant}
               approving={approveVariant.isPending}
               regenerating={generateVariants.isPending}
+              onSaveBody={async (body) => {
+                try {
+                  await updateVariant.mutateAsync({
+                    variantId: variant.id,
+                    body_text: body,
+                  });
+                } catch (e) {
+                  toast.error((e as Error).message);
+                  throw e;
+                }
+              }}
               onApproveToggle={(next) => {
                 approveVariant.mutate(
                   { variantId: variant.id, approved: next },

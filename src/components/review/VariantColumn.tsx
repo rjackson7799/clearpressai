@@ -13,12 +13,14 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { BilingualLabel } from '@/components/shared/BilingualLabel';
+import { VariantEditor } from '@/components/review/VariantEditor';
 import type { ContentVariant } from '@/types/domain';
 
 export interface VariantColumnProps {
   variant: ContentVariant;
   onApproveToggle: (next: boolean) => void;
   onRegenerate: () => void;
+  onSaveBody: (body: string) => Promise<void> | void;
   approving?: boolean;
   regenerating?: boolean;
 }
@@ -27,11 +29,12 @@ export function VariantColumn({
   variant,
   onApproveToggle,
   onRegenerate,
+  onSaveBody,
   approving,
   regenerating,
 }: VariantColumnProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const paragraphs = variant.body_text.split(/\n\n+/);
+  const [dirty, setDirty] = useState(false);
   const minutes = Math.max(1, Math.round(variant.reading_time_seconds / 60));
 
   return (
@@ -52,7 +55,7 @@ export function VariantColumn({
             type="button"
             variant={variant.internal_approved ? 'outline' : 'default'}
             size="sm"
-            disabled={approving}
+            disabled={approving || dirty}
             onClick={() => onApproveToggle(!variant.internal_approved)}
           >
             {variant.internal_approved ? (
@@ -65,7 +68,7 @@ export function VariantColumn({
             type="button"
             variant="ghost"
             size="sm"
-            disabled={regenerating}
+            disabled={regenerating || dirty}
             onClick={() => setConfirmOpen(true)}
           >
             <RefreshCwIcon className="size-3" />
@@ -74,12 +77,13 @@ export function VariantColumn({
         </div>
       </div>
 
-      <div className="px-4 py-4 flex-1 font-serif whitespace-pre-wrap text-[15px] leading-7">
-        {paragraphs.map((p, i) => (
-          <p key={i} className="mb-3 last:mb-0">
-            {p}
-          </p>
-        ))}
+      <div className="px-4 py-4 flex-1">
+        <VariantEditor
+          key={variant.updated_at}
+          initialBodyText={variant.body_text}
+          onSave={onSaveBody}
+          onDirtyChange={setDirty}
+        />
       </div>
 
       <div className="px-4 py-2 border-t text-xs text-muted-foreground flex items-center justify-between">
