@@ -243,15 +243,17 @@ export type Database = {
           created_at: string
           extraction_run_id: string | null
           id: string
+          last_extracted_at: string | null
           length_norms: Json
           model_used: string | null
           notes: string | null
           preferred_vocabulary: Json
           prompt_version: string | null
           signature_phrases: Json
-          stylistic_patterns: Json
+          stylistic_patterns: string
           tone_keywords: Json
           updated_at: string
+          user_edited: boolean
           words_to_avoid: Json
         }
         Insert: {
@@ -259,15 +261,17 @@ export type Database = {
           created_at?: string
           extraction_run_id?: string | null
           id?: string
+          last_extracted_at?: string | null
           length_norms?: Json
           model_used?: string | null
           notes?: string | null
           preferred_vocabulary?: Json
           prompt_version?: string | null
           signature_phrases?: Json
-          stylistic_patterns?: Json
+          stylistic_patterns?: string
           tone_keywords?: Json
           updated_at?: string
+          user_edited?: boolean
           words_to_avoid?: Json
         }
         Update: {
@@ -275,15 +279,17 @@ export type Database = {
           created_at?: string
           extraction_run_id?: string | null
           id?: string
+          last_extracted_at?: string | null
           length_norms?: Json
           model_used?: string | null
           notes?: string | null
           preferred_vocabulary?: Json
           prompt_version?: string | null
           signature_phrases?: Json
-          stylistic_patterns?: Json
+          stylistic_patterns?: string
           tone_keywords?: Json
           updated_at?: string
+          user_edited?: boolean
           words_to_avoid?: Json
         }
         Relationships: [
