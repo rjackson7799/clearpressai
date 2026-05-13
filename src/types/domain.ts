@@ -36,6 +36,11 @@ export type ContentVariantUpdate = Tables['content_variants']['Update'];
 export type ComplianceFindingRow = Tables['compliance_findings']['Row'];
 export type ComplianceFindingUpdate = Tables['compliance_findings']['Update'];
 
+export type AuditReport = Tables['audit_reports']['Row'];
+export type AuditSignature = Tables['audit_signatures']['Row'];
+export type AuditTrailEvent = Tables['audit_trail_events']['Row'];
+export type AuditReportStatus = 'draft' | 'finalized' | 'revised';
+
 export type ContentType =
   | 'press_release'
   | 'blog_post'
