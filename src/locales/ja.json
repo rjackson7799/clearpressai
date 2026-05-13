@@ -3,8 +3,13 @@
     "save": "保存",
     "cancel": "キャンセル",
     "delete": "削除",
+    "edit": "編集",
+    "back": "戻る",
     "logout": "ログアウト",
-    "loading": "読み込み中…"
+    "loading": "読み込み中…",
+    "confirm": "確認",
+    "error": "エラー",
+    "retry": "再試行"
   },
   "auth": {
     "login": "ログイン",
@@ -25,5 +30,109 @@
     "language": "言語",
     "language_japanese": "日本語",
     "language_english": "English"
+  },
+  "clients": {
+    "title": "クライアント",
+    "newClient": "新規作成",
+    "name": "クライアント名",
+    "nameEn": "英語名",
+    "industry": "業界",
+    "industry_pharmaceutical": "製薬",
+    "primaryContactName": "担当者名",
+    "primaryContactEmail": "担当者メール",
+    "notes": "メモ",
+    "createdAt": "作成日",
+    "updatedAt": "更新日",
+    "actions": "操作",
+    "view": "詳細",
+    "save": "保存",
+    "delete": "削除",
+    "confirmDelete": "このクライアントを削除しますか？",
+    "confirmDeleteBody": "クライアントと関連するブランドボイス・ガイドラインも削除されます。この操作は取り消せません。",
+    "empty": "クライアントがありません",
+    "emptyHint": "「新規作成」から最初のクライアントを追加してください",
+    "errors": {
+      "nameRequired": "クライアント名を入力してください",
+      "emailInvalid": "有効なメールアドレスを入力してください"
+    },
+    "tabs": {
+      "details": "詳細",
+      "brandVoice": "ブランドボイス",
+      "guidelines": "ガイドライン"
+    },
+    "createdToast": "クライアントを作成しました",
+    "updatedToast": "クライアントを更新しました",
+    "deletedToast": "クライアントを削除しました"
+  },
+  "brandVoice": {
+    "title": "ブランドボイス",
+    "samples": "サンプル文書",
+    "upload": "ファイルをアップロード",
+    "dragDropHint": "PDF / DOCX / TXT を5〜20件、ここにドラッグ＆ドロップ（各10MB以下）",
+    "sampleCount": "{{count}}件のサンプル",
+    "usableCount": "{{count}}件が分析可能",
+    "readinessOk": "分析に十分です",
+    "readinessShort": "あと{{count}}件のサンプルが必要です",
+    "readinessFilteredHint": "テキストが少ないサンプルは含まれません",
+    "extractButton": "抽出を実行",
+    "extracting": "抽出中…",
+    "lastExtractedAt": "前回の抽出: {{when}}",
+    "reExtractWarningTitle": "手動編集が破棄されます",
+    "reExtractWarningBody": "プロファイルを手動で編集しています。再抽出を実行するとAIの出力で上書きされます。続行しますか？",
+    "lowTextWarning": "テキストが少なすぎます（スキャンPDFの可能性）",
+    "uploadStatus": {
+      "pending": "待機中",
+      "extracting": "抽出中",
+      "uploading": "アップロード中",
+      "done": "完了",
+      "error": "エラー"
+    },
+    "uploadErrors": {
+      "file_too_large": "ファイルが10MBを超えています",
+      "unsupported_mime": "対応していないファイル形式です",
+      "extraction_failed": "テキスト抽出に失敗しました",
+      "upload_failed": "アップロードに失敗しました"
+    },
+    "extractErrors": {
+      "permission_denied": "認証エラー",
+      "validation_error": "入力エラー",
+      "not_found": "サンプルが見つかりません",
+      "ai_error": "AI出力エラー",
+      "internal_error": "内部エラー"
+    },
+    "profile": "ボイスプロファイル",
+    "profileEmpty": "サンプルを5件以上アップロードし、「抽出を実行」をクリックしてください",
+    "toneKeywords": "トーンキーワード",
+    "stylisticPatterns": "文体的特徴",
+    "preferredVocabulary": "好まれる語彙",
+    "wordsToAvoid": "避けるべき表現",
+    "signaturePhrases": "シグネチャーフレーズ",
+    "lengthNorms": "標準的な分量",
+    "addTag": "追加",
+    "addLengthNorm": "種類を追加",
+    "lengthNormKey": "コンテンツ種別",
+    "lengthNormValue": "目安",
+    "extractedToast": "ブランドボイスを抽出しました",
+    "savedToast": "プロファイルを保存しました",
+    "sampleDeletedToast": "サンプルを削除しました",
+    "confirmSampleDeleteTitle": "サンプルを削除しますか？",
+    "confirmSampleDeleteBody": "この操作は取り消せません。"
+  },
+  "guidelines": {
+    "title": "ブランドガイドライン",
+    "addAnnotation": "内部メモを追加",
+    "annotationPlaceholder": "ブランドボイスに関する内部メモを記入…",
+    "save": "追加",
+    "archive": "アーカイブ",
+    "confirmArchive": "このガイドラインをアーカイブしますか？",
+    "empty": "ガイドラインがまだありません",
+    "createdToast": "ガイドラインを追加しました",
+    "archivedToast": "ガイドラインをアーカイブしました",
+    "source": {
+      "extraction": "抽出",
+      "internal_annotation": "内部メモ",
+      "client_feedback": "クライアントフィードバック",
+      "legal_review": "リーガルレビュー"
+    }
   }
 }

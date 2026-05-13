@@ -3,8 +3,13 @@
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
     "logout": "Log out",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "confirm": "Confirm",
+    "error": "Error",
+    "retry": "Retry"
   },
   "auth": {
     "login": "Log in",
@@ -25,5 +30,109 @@
     "language": "Language",
     "language_japanese": "日本語",
     "language_english": "English"
+  },
+  "clients": {
+    "title": "Clients",
+    "newClient": "New",
+    "name": "Name",
+    "nameEn": "English name",
+    "industry": "Industry",
+    "industry_pharmaceutical": "Pharmaceutical",
+    "primaryContactName": "Primary contact",
+    "primaryContactEmail": "Contact email",
+    "notes": "Notes",
+    "createdAt": "Created",
+    "updatedAt": "Updated",
+    "actions": "Actions",
+    "view": "View",
+    "save": "Save",
+    "delete": "Delete",
+    "confirmDelete": "Delete this client?",
+    "confirmDeleteBody": "Client and all related brand voice samples, profile, and guidelines will be deleted. This cannot be undone.",
+    "empty": "No clients yet",
+    "emptyHint": "Click \"New\" to add your first client",
+    "errors": {
+      "nameRequired": "Name is required",
+      "emailInvalid": "Enter a valid email address"
+    },
+    "tabs": {
+      "details": "Details",
+      "brandVoice": "Brand Voice",
+      "guidelines": "Guidelines"
+    },
+    "createdToast": "Client created",
+    "updatedToast": "Client updated",
+    "deletedToast": "Client deleted"
+  },
+  "brandVoice": {
+    "title": "Brand Voice",
+    "samples": "Samples",
+    "upload": "Upload files",
+    "dragDropHint": "Drag and drop 5–20 PDF / DOCX / TXT files here (max 10 MB each)",
+    "sampleCount": "{{count}} samples",
+    "usableCount": "{{count}} usable",
+    "readinessOk": "Enough to proceed",
+    "readinessShort": "{{count}} more sample(s) needed to start extraction",
+    "readinessFilteredHint": "Samples with too little text are not counted",
+    "extractButton": "Extract",
+    "extracting": "Extracting…",
+    "lastExtractedAt": "Last extracted: {{when}}",
+    "reExtractWarningTitle": "Manual edits will be discarded",
+    "reExtractWarningBody": "You've manually edited this profile. Re-extracting will overwrite it with new AI output. Continue?",
+    "lowTextWarning": "Too little text — likely a scanned PDF",
+    "uploadStatus": {
+      "pending": "Pending",
+      "extracting": "Extracting",
+      "uploading": "Uploading",
+      "done": "Done",
+      "error": "Error"
+    },
+    "uploadErrors": {
+      "file_too_large": "File exceeds 10 MB",
+      "unsupported_mime": "Unsupported file type",
+      "extraction_failed": "Text extraction failed",
+      "upload_failed": "Upload failed"
+    },
+    "extractErrors": {
+      "permission_denied": "Authentication error",
+      "validation_error": "Input validation error",
+      "not_found": "Samples not found",
+      "ai_error": "AI output error",
+      "internal_error": "Internal error"
+    },
+    "profile": "Voice profile",
+    "profileEmpty": "Upload at least 5 samples and click \"Extract\" to generate a profile",
+    "toneKeywords": "Tone keywords",
+    "stylisticPatterns": "Stylistic patterns",
+    "preferredVocabulary": "Preferred vocabulary",
+    "wordsToAvoid": "Words to avoid",
+    "signaturePhrases": "Signature phrases",
+    "lengthNorms": "Length norms",
+    "addTag": "Add",
+    "addLengthNorm": "Add content type",
+    "lengthNormKey": "Content type",
+    "lengthNormValue": "Length",
+    "extractedToast": "Brand voice extracted",
+    "savedToast": "Profile saved",
+    "sampleDeletedToast": "Sample deleted",
+    "confirmSampleDeleteTitle": "Delete this sample?",
+    "confirmSampleDeleteBody": "This action cannot be undone."
+  },
+  "guidelines": {
+    "title": "Brand Guidelines",
+    "addAnnotation": "Add internal note",
+    "annotationPlaceholder": "Add an internal note about brand voice…",
+    "save": "Add",
+    "archive": "Archive",
+    "confirmArchive": "Archive this guideline?",
+    "empty": "No guidelines yet",
+    "createdToast": "Guideline added",
+    "archivedToast": "Guideline archived",
+    "source": {
+      "extraction": "Extraction",
+      "internal_annotation": "Internal note",
+      "client_feedback": "Client feedback",
+      "legal_review": "Legal review"
+    }
   }
 }
