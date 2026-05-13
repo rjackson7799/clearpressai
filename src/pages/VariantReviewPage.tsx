@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -7,12 +7,19 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { BilingualLabel } from '@/components/shared/BilingualLabel';
 import { VariantColumn } from '@/components/review/VariantColumn';
+import { CompliancePanel } from '@/components/review/CompliancePanel';
 import { useProject, useContentItemForProject } from '@/hooks/useProjects';
 import { useClient } from '@/hooks/useClients';
 import { useVariantsForContentItem } from '@/hooks/useVariants';
 import { useGenerateVariants } from '@/hooks/useGenerateVariants';
 import { useApproveVariant } from '@/hooks/useApproveVariant';
 import { useUpdateVariant } from '@/hooks/useUpdateVariant';
+import { useComplianceCheck } from '@/hooks/useComplianceCheck';
+import {
+  useComplianceFindings,
+  type ComplianceFindingWithStale,
+} from '@/hooks/useComplianceFindings';
+import { useResolveFinding } from '@/hooks/useResolveFinding';
 
 export default function VariantReviewPage() {
   const { id: projectId } = useParams<{ id: string }>();
@@ -25,8 +32,23 @@ export default function VariantReviewPage() {
   const generateVariants = useGenerateVariants(contentItem?.id);
   const approveVariant = useApproveVariant(contentItem?.id);
   const updateVariant = useUpdateVariant(contentItem?.id);
+  const complianceCheck = useComplianceCheck(contentItem?.id);
+  const resolveFinding = useResolveFinding(contentItem?.id);
+
+  const { data: findingsByVariant } = useComplianceFindings(
+    contentItem?.id,
+    variants,
+  );
 
   const autoFiredRef = useRef(false);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [panelVariantId, setPanelVariantId] = useState<string | null>(null);
+  const [recheckingVariantId, setRecheckingVariantId] = useState<string | null>(
+    null,
+  );
+  const [resolvingFindingId, setResolvingFindingId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     if (
@@ -41,10 +63,19 @@ export default function VariantReviewPage() {
         {},
         {
           onError: (e) => toast.error(e.message),
+          onSuccess: (data) => {
+            const ids = data.variants.map((v) => v.id);
+            if (ids.length > 0) {
+              complianceCheck.mutate(
+                { variant_ids: ids },
+                { onError: (e) => toast.error(e.message) },
+              );
+            }
+          },
         },
       );
     }
-  }, [contentItem?.id, variants, generateVariants]);
+  }, [contentItem?.id, variants, generateVariants, complianceCheck]);
 
   const generating = generateVariants.isPending;
 
@@ -53,6 +84,76 @@ export default function VariantReviewPage() {
       (variants ?? []).slice().sort((a, b) => a.variant_index - b.variant_index),
     [variants],
   );
+
+  const handleApplyFix = async (
+    variantId: string,
+    finding: ComplianceFindingWithStale,
+  ) => {
+    const variant = sortedVariants.find((v) => v.id === variantId);
+    if (!variant) return;
+    if (!finding.suggested_correction) return;
+
+    setResolvingFindingId(finding.id);
+    try {
+      const found = variant.body_text.includes(finding.source_text);
+      if (!found) {
+        toast.warning(
+          '本文に該当箇所が見つかりません / Source text not found in body',
+        );
+      } else {
+        const next = variant.body_text.replace(
+          finding.source_text,
+          finding.suggested_correction,
+        );
+        await updateVariant.mutateAsync({
+          variantId,
+          body_text: next,
+        });
+      }
+      await resolveFinding.mutateAsync({
+        findingId: finding.id,
+        status: 'fixed',
+      });
+      toast.success('修正を適用しました / Fix applied');
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setResolvingFindingId(null);
+    }
+  };
+
+  const handleRecheck = (variantId: string) => {
+    setRecheckingVariantId(variantId);
+    complianceCheck.mutate(
+      { variant_ids: [variantId] },
+      {
+        onError: (e) => toast.error(e.message),
+        onSettled: () => setRecheckingVariantId(null),
+      },
+    );
+  };
+
+  const handleAcknowledge = (findingId: string) => {
+    setResolvingFindingId(findingId);
+    resolveFinding.mutate(
+      { findingId, status: 'acknowledged' },
+      {
+        onError: (e) => toast.error(e.message),
+        onSettled: () => setResolvingFindingId(null),
+      },
+    );
+  };
+
+  const handleReopen = (findingId: string) => {
+    setResolvingFindingId(findingId);
+    resolveFinding.mutate(
+      { findingId, status: 'unresolved' },
+      {
+        onError: (e) => toast.error(e.message),
+        onSettled: () => setResolvingFindingId(null),
+      },
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -105,47 +206,70 @@ export default function VariantReviewPage() {
       )}
 
       {!generating && !variantsLoading && sortedVariants.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {sortedVariants.map((variant) => (
-            <VariantColumn
-              key={variant.id}
-              variant={variant}
-              approving={approveVariant.isPending}
-              regenerating={generateVariants.isPending}
-              onSaveBody={async (body) => {
-                try {
-                  await updateVariant.mutateAsync({
-                    variantId: variant.id,
-                    body_text: body,
-                  });
-                } catch (e) {
-                  toast.error((e as Error).message);
-                  throw e;
-                }
-              }}
-              onApproveToggle={(next) => {
-                approveVariant.mutate(
-                  { variantId: variant.id, approved: next },
-                  {
-                    onError: (e) => toast.error(e.message),
-                  },
-                );
-              }}
-              onRegenerate={() => {
-                generateVariants.mutate(
-                  { variant_index: variant.variant_index as 1 | 2 | 3 },
-                  {
-                    onError: (e) => toast.error(e.message),
-                    onSuccess: () =>
-                      toast.success(
-                        `案${variant.variant_index}を再生成しました`,
-                      ),
-                  },
-                );
-              }}
-            />
-          ))}
-        </div>
+        <>
+          {complianceCheck.isPending && (
+            <p className="text-sm text-muted-foreground">
+              <BilingualLabel
+                ja="コンプライアンスを確認中..."
+                en="Running compliance check..."
+              />
+            </p>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {sortedVariants.map((variant) => (
+              <VariantColumn
+                key={variant.id}
+                variant={variant}
+                findings={findingsByVariant?.[variant.id] ?? []}
+                approving={approveVariant.isPending}
+                regenerating={generateVariants.isPending}
+                onOpenCompliance={() => {
+                  setPanelVariantId(variant.id);
+                  setPanelOpen(true);
+                }}
+                onSaveBody={async (body) => {
+                  try {
+                    await updateVariant.mutateAsync({
+                      variantId: variant.id,
+                      body_text: body,
+                    });
+                  } catch (e) {
+                    toast.error((e as Error).message);
+                    throw e;
+                  }
+                }}
+                onApproveToggle={(next) => {
+                  approveVariant.mutate(
+                    { variantId: variant.id, approved: next },
+                    {
+                      onError: (e) => toast.error(e.message),
+                    },
+                  );
+                }}
+                onRegenerate={() => {
+                  generateVariants.mutate(
+                    { variant_index: variant.variant_index as 1 | 2 | 3 },
+                    {
+                      onError: (e) => toast.error(e.message),
+                      onSuccess: (data) => {
+                        const ids = data.variants.map((v) => v.id);
+                        if (ids.length > 0) {
+                          complianceCheck.mutate(
+                            { variant_ids: ids },
+                            { onError: (e) => toast.error(e.message) },
+                          );
+                        }
+                        toast.success(
+                          `案${variant.variant_index}を再生成しました`,
+                        );
+                      },
+                    },
+                  );
+                }}
+              />
+            ))}
+          </div>
+        </>
       )}
 
       {!generating &&
@@ -171,6 +295,20 @@ export default function VariantReviewPage() {
             </Button>
           </div>
         )}
+
+      <CompliancePanel
+        open={panelOpen}
+        onOpenChange={setPanelOpen}
+        initialVariantId={panelVariantId}
+        variants={sortedVariants}
+        findingsByVariant={findingsByVariant ?? {}}
+        onRecheck={handleRecheck}
+        onApplyFix={handleApplyFix}
+        onAcknowledge={handleAcknowledge}
+        onReopen={handleReopen}
+        recheckingVariantId={recheckingVariantId}
+        resolvingFindingId={resolvingFindingId}
+      />
     </div>
   );
 }

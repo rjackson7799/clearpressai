@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckIcon, RefreshCwIcon } from 'lucide-react';
+import { AlertTriangleIcon, CheckIcon, RefreshCwIcon, ShieldAlertIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -15,27 +15,39 @@ import {
 import { BilingualLabel } from '@/components/shared/BilingualLabel';
 import { VariantEditor } from '@/components/review/VariantEditor';
 import type { ContentVariant } from '@/types/domain';
+import type { ComplianceFindingWithStale } from '@/hooks/useComplianceFindings';
 
 export interface VariantColumnProps {
   variant: ContentVariant;
+  findings: ComplianceFindingWithStale[];
   onApproveToggle: (next: boolean) => void;
   onRegenerate: () => void;
   onSaveBody: (body: string) => Promise<void> | void;
+  onOpenCompliance: () => void;
   approving?: boolean;
   regenerating?: boolean;
 }
 
 export function VariantColumn({
   variant,
+  findings,
   onApproveToggle,
   onRegenerate,
   onSaveBody,
+  onOpenCompliance,
   approving,
   regenerating,
 }: VariantColumnProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [dirty, setDirty] = useState(false);
   const minutes = Math.max(1, Math.round(variant.reading_time_seconds / 60));
+
+  const unresolved = findings.filter((f) => f.resolution_status === 'unresolved');
+  const blockerCount = unresolved.filter((f) => f.severity === 'blocker').length;
+  const warningCount = unresolved.filter((f) => f.severity === 'warning').length;
+  const noteCount = unresolved.filter((f) => f.severity === 'note').length;
+  const anyStale = findings.some((f) => f.is_stale);
+  const hasFindings = findings.length > 0;
 
   return (
     <div className="rounded-md border bg-card flex flex-col">
@@ -85,6 +97,40 @@ export function VariantColumn({
           onDirtyChange={setDirty}
         />
       </div>
+
+      {hasFindings && (
+        <div className="px-4 py-2 border-t flex items-center justify-between gap-2">
+          <button
+            type="button"
+            className="flex items-center gap-1.5 text-xs hover:underline"
+            onClick={onOpenCompliance}
+          >
+            <ShieldAlertIcon className="size-3.5" />
+            {blockerCount > 0 && (
+              <Badge variant="destructive" className="px-1.5">
+                {blockerCount}
+              </Badge>
+            )}
+            {warningCount > 0 && (
+              <Badge variant="default" className="px-1.5">
+                {warningCount}
+              </Badge>
+            )}
+            {noteCount > 0 && (
+              <Badge variant="secondary" className="px-1.5">
+                {noteCount}
+              </Badge>
+            )}
+            <BilingualLabel ja="指摘を見る" en="View findings" />
+          </button>
+          {anyStale && (
+            <span className="flex items-center gap-1 text-xs text-amber-700">
+              <AlertTriangleIcon className="size-3" />
+              <BilingualLabel ja="要再チェック" en="Stale" />
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="px-4 py-2 border-t text-xs text-muted-foreground flex items-center justify-between">
         <span>{variant.char_count}字</span>
