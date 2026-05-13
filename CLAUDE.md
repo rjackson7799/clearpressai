@@ -22,7 +22,7 @@ Two documents in `docs/` define what we're building. They supersede anything Cla
 TSD §16 defines Phase 0 → Phase 7. Phase 0 is the load-bearing technical uncertainty and must validate before downstream phases lock in.
 
 - **Phase 0** — ☑ **PASSED 2026-05-12.** Brand voice extraction prototype at [prototypes/brand-voice-extraction/](prototypes/brand-voice-extraction/). Closeout at [prototypes/brand-voice-extraction/phase0-closeout/](prototypes/brand-voice-extraction/phase0-closeout/) with validated prompt, profile JSONs, generated holdout, and filled rubric. The validated extraction prompt (`v1-tsd-baseline`, verbatim from TSD §6.1) graduates to `src/lib/prompts/brand-voice.ts` in Phase 2 unchanged.
-- **Phase 1** — Foundation: Vite + React + TS scaffold, Supabase project + schema migrations, auth flow, app shell, i18n.
+- **Phase 1** — ☑ **PASSED 2026-05-12.** Vite + React 19 + TS 6 + Tailwind v4 + shadcn v4 (radix-nova) scaffold; Supabase project `clearpress-ai-2026` in Tokyo region with 14-table schema, uniform `firm_users_full_access` RLS, and `handle_new_user()` trigger; auth (email+password + magic link + reset) wired with 7-day sessions; AppShell with sidebar (Phase 2/3 items greyed with badges) + header + language toggle persisted to `users.language_pref`; i18n (react-i18next, ja default) with `BilingualLabel` co-display per PRD §6.3. Cloud project ref: `hsdqvlnzorjzxfaqijns`.
 - **Phase 2** — Client management + brand voice library UI. Phase 0's validated prompt wires in here.
 - **Phase 3** — Project / brief input, 3-variant generation orchestration, compliance check, variant review UI with Tiptap.
 - **Phase 4** — Audit report assembly, digital signature, audit trail instrumentation, versioning.
@@ -30,7 +30,20 @@ TSD §16 defines Phase 0 → Phase 7. Phase 0 is the load-bearing technical unce
 - **Phase 6** — Public feedback page, feedback submission, voice guideline delta generation, voice profile update.
 - **Phase 7** — Polish, edge cases, E2E tests, performance check.
 
-Currently **between Phase 0 and Phase 1**. Phase 0 passed on 2026-05-12 with the baseline TSD §6.1 prompt and no iteration. Sample data fetched for AstraZeneca KK (15 releases) and Chugai Pharmaceutical (15 releases); a third company (Takeda Japan, 3 of 15 releases) is partial and deferred. Closeout artifacts at [prototypes/brand-voice-extraction/phase0-closeout/](prototypes/brand-voice-extraction/phase0-closeout/).
+Currently **between Phase 1 and Phase 2**. Phase 0 passed 2026-05-12 on round 1 of prompt iteration. Phase 1 closed out the same day after the planned scope (TSD §16) was implemented end-to-end and smoke-tested against the live Supabase project. Phase 2 picks up clients CRUD + brand voice library UI; the Phase 0 prompt at [prototypes/brand-voice-extraction/phase0-closeout/PROMPT-FINAL.md](prototypes/brand-voice-extraction/phase0-closeout/PROMPT-FINAL.md) graduates unchanged to `src/lib/prompts/brand-voice.ts` here.
+
+### Phase 1 deviations from the original plan (worth knowing)
+
+The plan listed React 18.3 / TS 5.5 / Vite 5.4 / Tailwind 3.4 / shadcn New-York-Slate / React Router 6 as exact pins. The TSD §2.1 spec actually says `+` minimums, and the live `npm create vite@latest` / shadcn-v4 toolchain delivered newer:
+- React 19.2 · TypeScript 6.0 · Vite 8 · Tailwind v4 · shadcn v4 (radix-nova preset, default base color `neutral`) · React Router 7.15.
+All satisfy TSD `+` minimums; Phase 2+ should expect these versions, not the plan's literal pins.
+
+### Phase 3 carry-forward (preserved verbatim from Phase 0 closeout)
+
+Both items must land in the variant-generation prompt design when Phase 3 starts:
+
+- **Length norms need sub-type granularity** (full-clinical announcement vs partner acknowledgment vs CSR/event vs business news). The prompt should detect content sub-type from the brief and apply the matching length norm, not a single global one.
+- **Fact-invention guardrail**, verbatim: *"Do not invent facts not present in the brief — including company HQ city, executive names, founding year, country counts, etc. If the brief doesn't specify, omit rather than guess."*
 
 ---
 
