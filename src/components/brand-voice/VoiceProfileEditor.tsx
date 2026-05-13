@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { PlusIcon, XIcon } from "lucide-react";
@@ -62,11 +62,14 @@ export function VoiceProfileEditor({ clientId }: Props) {
   const { t } = useTranslation();
   const { data: profile, isLoading } = useBrandVoiceProfile(clientId);
   const updateProfile = useUpdateBrandVoiceProfile(clientId);
-  const [state, setState] = useState(profileToState(profile));
-
-  useEffect(() => {
+  const [state, setState] = useState(() => profileToState(profile));
+  // Re-seed local edit state when the server profile changes
+  // (after extraction, save, etc.) — render-time pattern, not an effect.
+  const [seenProfile, setSeenProfile] = useState(profile);
+  if (profile !== seenProfile) {
+    setSeenProfile(profile);
     setState(profileToState(profile));
-  }, [profile]);
+  }
 
   if (isLoading) {
     return <div className="text-sm text-muted-foreground">{t("common.loading")}</div>;

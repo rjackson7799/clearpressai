@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { ClientForm, type ClientFormValues } from "@/components/client/ClientForm";
+import { ClientForm } from "@/components/client/ClientForm";
+import type { ClientFormValues } from "@/components/client/ClientForm.schema";
 import { useCreateClient } from "@/hooks/useClients";
 import { BilingualLabel } from "@/components/shared/BilingualLabel";
 

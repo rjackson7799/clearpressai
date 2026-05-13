@@ -16,10 +16,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { BilingualLabel } from "@/components/shared/BilingualLabel";
-import {
-  ClientForm,
-  type ClientFormValues,
-} from "@/components/client/ClientForm";
+import { ClientForm } from "@/components/client/ClientForm";
+import type { ClientFormValues } from "@/components/client/ClientForm.schema";
 import {
   useClient,
   useDeleteClient,

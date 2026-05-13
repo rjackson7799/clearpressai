@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import {
   Form,
   FormControl,
@@ -14,22 +13,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { BilingualLabel } from "@/components/shared/BilingualLabel";
-
-export const clientFormSchema = z.object({
-  name: z.string().min(1, "clients.errors.nameRequired"),
-  name_en: z.string().optional(),
-  industry: z.string(),
-  primary_contact_name: z.string().optional(),
-  primary_contact_email: z
-    .string()
-    .refine((v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), {
-      message: "clients.errors.emailInvalid",
-    })
-    .optional(),
-  notes: z.string().optional(),
-});
-
-export type ClientFormValues = z.infer<typeof clientFormSchema>;
+import {
+  clientFormSchema,
+  type ClientFormValues,
+} from "@/components/client/ClientForm.schema";
 
 interface Props {
   defaultValues?: Partial<ClientFormValues>;

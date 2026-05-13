@@ -23,20 +23,31 @@ TSD §16 defines Phase 0 → Phase 7. Phase 0 is the load-bearing technical unce
 
 - **Phase 0** — ☑ **PASSED 2026-05-12.** Brand voice extraction prototype at [prototypes/brand-voice-extraction/](prototypes/brand-voice-extraction/). Closeout at [prototypes/brand-voice-extraction/phase0-closeout/](prototypes/brand-voice-extraction/phase0-closeout/) with validated prompt, profile JSONs, generated holdout, and filled rubric. The validated extraction prompt (`v1-tsd-baseline`, verbatim from TSD §6.1) graduates to `src/lib/prompts/brand-voice.ts` in Phase 2 unchanged.
 - **Phase 1** — ☑ **PASSED 2026-05-12.** Vite + React 19 + TS 6 + Tailwind v4 + shadcn v4 (radix-nova) scaffold; Supabase project `clearpress-ai-2026` in Tokyo region with 14-table schema, uniform `firm_users_full_access` RLS, and `handle_new_user()` trigger; auth (email+password + magic link + reset) wired with 7-day sessions; AppShell with sidebar (Phase 2/3 items greyed with badges) + header + language toggle persisted to `users.language_pref`; i18n (react-i18next, ja default) with `BilingualLabel` co-display per PRD §6.3. Cloud project ref: `hsdqvlnzorjzxfaqijns`.
-- **Phase 2** — Client management + brand voice library UI. Phase 0's validated prompt wires in here.
+- **Phase 2** — ☑ **PASSED 2026-05-13.** Clients CRUD (list / new / detail w/ tabs), brand voice library with PDF/DOCX/TXT upload + browser-side text extraction (`pdfjs-dist` + `mammoth`), Storage bucket `brand-voice-samples` + uniform RLS, readiness gate (usable-text count, not raw count), `extract-voice` Edge Function deployed on Sonnet 4.6 with the verbatim Phase 0 prompt + Zod-validated output + drift-guarded sync test, profile editor with tag chips for the four array fields, guidelines panel (extraction-seeded + internal annotations). Smoke-tested end-to-end against the live Supabase project (20.4s wall, 21,588/884 tokens). Migrations `0002` (storage bucket) + `0003` (schema alignment: `user_edited`, `last_extracted_at`, `stylistic_patterns` jsonb→text). 30/30 unit tests passing.
 - **Phase 3** — Project / brief input, 3-variant generation orchestration, compliance check, variant review UI with Tiptap.
 - **Phase 4** — Audit report assembly, digital signature, audit trail instrumentation, versioning.
 - **Phase 5** — Delivery composer, scheduled send (pg_cron), magic-link generation, email via Resend.
 - **Phase 6** — Public feedback page, feedback submission, voice guideline delta generation, voice profile update.
 - **Phase 7** — Polish, edge cases, E2E tests, performance check.
 
-Currently **between Phase 1 and Phase 2**. Phase 0 passed 2026-05-12 on round 1 of prompt iteration. Phase 1 closed out the same day after the planned scope (TSD §16) was implemented end-to-end and smoke-tested against the live Supabase project. Phase 2 picks up clients CRUD + brand voice library UI; the Phase 0 prompt at [prototypes/brand-voice-extraction/phase0-closeout/PROMPT-FINAL.md](prototypes/brand-voice-extraction/phase0-closeout/PROMPT-FINAL.md) graduates unchanged to `src/lib/prompts/brand-voice.ts` here.
+Currently **between Phase 2 and Phase 3**. Phases 0–2 all passed across 2026-05-12 to 2026-05-13. Phase 3 picks up project/brief input, three-variant generation orchestration, compliance check, and the variant review UI with Tiptap. The two Phase 0 carry-forward items below (length-norm sub-types, fact-invention guardrail) land in the Phase 3 prompt design.
 
 ### Phase 1 deviations from the original plan (worth knowing)
 
 The plan listed React 18.3 / TS 5.5 / Vite 5.4 / Tailwind 3.4 / shadcn New-York-Slate / React Router 6 as exact pins. The TSD §2.1 spec actually says `+` minimums, and the live `npm create vite@latest` / shadcn-v4 toolchain delivered newer:
 - React 19.2 · TypeScript 6.0 · Vite 8 · Tailwind v4 · shadcn v4 (radix-nova preset, default base color `neutral`) · React Router 7.15.
 All satisfy TSD `+` minimums; Phase 2+ should expect these versions, not the plan's literal pins.
+
+### Phase 2 deviations from the plan (worth knowing)
+
+- **shadcn `form` component is not in the `radix-nova` registry.** `shadcn@latest add form` silently no-ops on this preset. The canonical shadcn form.tsx was written by hand, adapted to the radix-nova convention (`radix-ui` barrel imports + `data-slot` attributes). `FormMessage` was also modified to prefer caller-supplied children over the auto-rendered error string so i18n-translated error messages can flow through.
+- **shadcn `sonner` component imports `next-themes`** by default. Since this is Vite/React (not Next), and the app has no theme switcher yet, the `useTheme()` call was replaced with a hardcoded `theme="system"`.
+- **pdfjs-dist v5 is jsdom-incompatible at module load** (touches `DOMMatrix` via canvas.js even when no PDF is processed). The fix: `pdfjs` and its worker setup are dynamic-imported inside the PDF branch of `extractTextFromFile`, so unit tests for TXT/DOCX paths never load it. Production behavior is unchanged.
+- **Anthropic SDK pin floats at `^0.95.2` in `supabase/functions/extract-voice/deno.json`** (latest at deploy time). The plan didn't pin a version; Deno needed an actual recent one to resolve.
+- **`zod` v4 was installed (`^4.4.3`), not v3.** API differs slightly — `.default()` creates an input/output type split that breaks RHF type inference, so defaults are kept in the form's `defaultValues` only, not on the schema fields.
+- **Anthropic API secret managed via the Supabase dashboard** (not CLI). The deploy step ran `npx supabase functions deploy extract-voice` only — the user set `ANTHROPIC_API_KEY` directly in the dashboard. Equivalent endpoint.
+- **Smoke test ran against the live Anthropic API on real AZ samples** (5 .txt from the prototype corpus, 21,588 input / 884 output tokens, 20.4s wall). The test client was deleted after; storage bucket has no orphans because the smoke flow seeded `storage_path` strings without uploading bytes.
+- **Eslint config now exempts `src/components/ui/**` from `react-refresh/only-export-components`** (shadcn convention exports variants/hooks alongside components) and globally ignores `prototypes/` + `.tmp-*`.
 
 ### Phase 3 carry-forward (preserved verbatim from Phase 0 closeout)
 
@@ -57,9 +68,7 @@ Both items must land in the variant-generation prompt design when Phase 3 starts
 
 ### Model pinning (regulatory requirement)
 
-The Claude model MUST be pinned as a constant and recorded in the audit trail per regulation. Current pin: `claude-sonnet-4-6` for extraction / variant generation / compliance check, `claude-haiku-4-5-20251001` for low-cost ops (guideline-delta extraction).
-
-TSD §2.3 currently shows `claude-sonnet-4-5-20251022`; that's the original draft pin. Update TSD §2.3 to match `claude-sonnet-4-6` before Phase 2 starts.
+The Claude model MUST be pinned as a constant and recorded in the audit trail per regulation. Current pin: `claude-sonnet-4-6` for extraction / variant generation / compliance check, `claude-haiku-4-5-20251001` for low-cost ops (guideline-delta extraction). TSD §2.3 and `src/lib/prompts/brand-voice.ts` (`CLAUDE_MODELS`) agree.
 
 ---
 

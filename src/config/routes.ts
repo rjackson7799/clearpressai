@@ -8,7 +8,7 @@ export type NavItem = {
 
 export const SIDEBAR_NAV: NavItem[] = [
   { path: "/",         labelJa: "ダッシュボード", labelEn: "Dashboard", enabled: true },
-  { path: "/clients",  labelJa: "クライアント",   labelEn: "Clients",   enabled: false, phase: 2 },
+  { path: "/clients",  labelJa: "クライアント",   labelEn: "Clients",   enabled: true },
   { path: "/projects", labelJa: "プロジェクト",   labelEn: "Projects",  enabled: false, phase: 3 },
   { path: "/settings", labelJa: "設定",           labelEn: "Settings",  enabled: true },
 ];
