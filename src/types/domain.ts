@@ -41,6 +41,12 @@ export type AuditSignature = Tables['audit_signatures']['Row'];
 export type AuditTrailEvent = Tables['audit_trail_events']['Row'];
 export type AuditReportStatus = 'draft' | 'finalized' | 'revised';
 
+export type Delivery = Tables['deliveries']['Row'];
+export type DeliveryStatus = 'draft' | 'scheduled' | 'sent' | 'failed';
+export type AttachmentFormat = 'pdf' | 'word' | 'both';
+export type ScheduledSend = Tables['scheduled_sends']['Row'];
+export type FeedbackToken = Tables['feedback_tokens']['Row'];
+
 export type ContentType =
   | 'press_release'
   | 'blog_post'
