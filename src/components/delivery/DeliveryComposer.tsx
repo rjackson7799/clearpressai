@@ -1,9 +1,9 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
-import { SendIcon, ClockIcon } from 'lucide-react';
+import { SendIcon, ClockIcon, AlertTriangleIcon } from 'lucide-react';
 import {
   Form,
   FormControl,
@@ -37,6 +37,10 @@ import { VariantPicker } from '@/components/delivery/VariantPicker';
 import { SenderIdentityBanner } from '@/components/delivery/SenderIdentityBanner';
 import { ScheduleField } from '@/components/delivery/ScheduleField';
 import { DeliveryBodyEditor } from '@/components/delivery/DeliveryBodyEditor';
+import { PreSendChecklist } from '@/components/delivery/PreSendChecklist';
+import { usePreSendChecklist } from '@/hooks/usePreSendChecklist';
+import { ScheduleWarningDialog } from '@/components/delivery/ScheduleWarningDialog';
+import { getSchedulingWarnings } from '@/lib/schedule-warnings';
 import type { Project } from '@/types/domain';
 
 interface Props {
@@ -172,6 +176,34 @@ function DeliveryComposerForm({ projectId, project, variants }: FormProps) {
     name: 'scheduled_for',
   });
   const ccEmails = useWatch({ control: form.control, name: 'cc_emails' }) ?? [];
+  const recipientEmail = useWatch({
+    control: form.control,
+    name: 'recipient_email',
+  });
+  const acknowledgedWarnings =
+    useWatch({ control: form.control, name: 'scheduling_warnings' }) ?? [];
+
+  const [manualAck, setManualAck] = useState(false);
+  const [pendingSubmit, setPendingSubmit] = useState<ComposerInput | null>(
+    null,
+  );
+
+  const selectedVariantRows = useMemo(
+    () => variants.filter((v) => variantIds.includes(v.id)),
+    [variants, variantIds],
+  );
+
+  const currentWarnings = useMemo(
+    () => getSchedulingWarnings(scheduledFor),
+    [scheduledFor],
+  );
+
+  const checklist = usePreSendChecklist({
+    projectId,
+    selectedVariants: selectedVariantRows,
+    recipientEmail: recipientEmail ?? '',
+    manualAcknowledged: manualAck,
+  });
 
   const handleToggleVariant = (
     variant: ApprovedVariantRow,
@@ -204,47 +236,82 @@ function DeliveryComposerForm({ projectId, project, variants }: FormProps) {
     [form],
   );
 
-  const selectedVariants = useMemo(
-    () => variants.filter((v) => variantIds.includes(v.id)),
-    [variants, variantIds],
-  );
-
   const livePreviewSummary = useMemo(() => {
-    if (selectedVariants.length === 0) return null;
+    if (selectedVariantRows.length === 0) return null;
     return buildComparisonSummary(
-      selectedVariants.map((v) => ({
+      selectedVariantRows.map((v) => ({
         variant_index: v.variant_index,
         variant_label: v.variant_label,
         variation_directive: getVariationDirective(v),
         char_count: v.char_count,
       })),
     );
-  }, [selectedVariants]);
+  }, [selectedVariantRows]);
 
   const footerPreview = useMemo(
     () => buildFeedbackFooter('https://app.example/f/<magic-link-token>'),
     [],
   );
 
+  const submitMutation = useCallback(
+    (values: ComposerInput) => {
+      mutation.mutate(values, {
+        onSuccess: (result) => {
+          if (result.status === 'sent') {
+            toast.success('Delivery sent');
+          } else {
+            toast.success(
+              `Delivery scheduled for ${new Date(result.scheduled_for).toLocaleString()}`,
+            );
+          }
+          navigate(`/projects/${projectId}/audit`);
+        },
+      });
+    },
+    [mutation, navigate, projectId],
+  );
+
   const onSubmit = (values: ComposerInput) => {
-    mutation.mutate(values, {
-      onSuccess: (result) => {
-        if (result.status === 'sent') {
-          toast.success('Delivery sent');
-        } else {
-          toast.success(
-            `Delivery scheduled for ${new Date(result.scheduled_for).toLocaleString()}`,
-          );
-        }
-        navigate(`/projects/${projectId}/audit`);
-      },
-    });
+    const warnings = getSchedulingWarnings(values.scheduled_for);
+    const alreadyAcked = values.scheduling_warnings ?? [];
+    const unacked = warnings.filter((w) => !alreadyAcked.includes(w));
+    if (unacked.length > 0) {
+      setPendingSubmit(values);
+      return;
+    }
+    submitMutation(values);
+  };
+
+  const handleAcknowledgeWarnings = () => {
+    if (!pendingSubmit) return;
+    const values: ComposerInput = {
+      ...pendingSubmit,
+      scheduling_warnings: currentWarnings,
+    };
+    form.setValue('scheduling_warnings', currentWarnings);
+    setPendingSubmit(null);
+    submitMutation(values);
+  };
+
+  // Clearing the prior acknowledgements when the scheduled time changes keeps
+  // the audit trail honest: an ack records the warnings the user saw against
+  // the time they saw it for. A new time = a new ack.
+  const handleScheduledForChange = (utcIso: string | null) => {
+    form.setValue('scheduled_for', utcIso);
+    if (
+      (acknowledgedWarnings?.length ?? 0) > 0 &&
+      (utcIso === null ||
+        getSchedulingWarnings(utcIso).length !== acknowledgedWarnings.length)
+    ) {
+      form.setValue('scheduling_warnings', []);
+    }
   };
 
   // Past-schedule check is enforced server-side by create_delivery's
   // 'scheduled_in_past' P0004 gate. We don't re-check Date.now() in render
   // (react-hooks/purity flags it as impure).
-  const submitDisabled = mutation.isPending || variantIds.length === 0;
+  const submitDisabled =
+    mutation.isPending || variantIds.length === 0 || !checklist.allPassing;
 
   return (
     <Form {...form}>
@@ -458,7 +525,52 @@ function DeliveryComposerForm({ projectId, project, variants }: FormProps) {
           </h2>
           <ScheduleField
             value={scheduledFor ?? null}
-            onChange={(v) => form.setValue('scheduled_for', v)}
+            onChange={handleScheduledForChange}
+          />
+          {currentWarnings.length > 0 && (
+            <div className="rounded-md border border-amber-500/50 bg-amber-50 dark:bg-amber-950/30 p-3 text-xs space-y-1">
+              <div className="flex items-center gap-1 font-medium">
+                <AlertTriangleIcon className="size-3 text-amber-600" />
+                <BilingualLabel
+                  ja="送信タイミングに関する注意事項"
+                  en="Scheduling advisories"
+                />
+              </div>
+              <ul className="list-disc pl-5 space-y-0.5">
+                {currentWarnings.includes('outside_business_hours') && (
+                  <li>
+                    <BilingualLabel
+                      ja="営業時間外 (JST 09:00–18:00 の外)"
+                      en="Outside business hours (JST 09:00–18:00)"
+                    />
+                  </li>
+                )}
+                {currentWarnings.includes('japanese_holiday') && (
+                  <li>
+                    <BilingualLabel
+                      ja="日本の祝日"
+                      en="Japanese public holiday"
+                    />
+                  </li>
+                )}
+              </ul>
+              <p className="text-muted-foreground">
+                <BilingualLabel
+                  ja="送信時に確認を求められます。続行すると監査トレイルに記録されます。"
+                  en="You'll be asked to confirm at send time. Continuing is recorded in the audit trail."
+                />
+              </p>
+            </div>
+          )}
+        </section>
+
+        {/* § 8 — Pre-send checklist */}
+        <section className="space-y-3">
+          <PreSendChecklist
+            state={checklist}
+            hasSelectedVariants={selectedVariantRows.length > 0}
+            manualAcknowledged={manualAck}
+            onManualChange={setManualAck}
           />
         </section>
 
@@ -483,6 +595,16 @@ function DeliveryComposerForm({ projectId, project, variants }: FormProps) {
           )}
         </div>
       </form>
+
+      <ScheduleWarningDialog
+        open={pendingSubmit !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingSubmit(null);
+        }}
+        warnings={currentWarnings}
+        scheduledFor={scheduledFor ?? null}
+        onAcknowledge={handleAcknowledgeWarnings}
+      />
     </Form>
   );
 }
