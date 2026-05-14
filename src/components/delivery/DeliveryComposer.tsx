@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { SendIcon, ClockIcon, AlertTriangleIcon } from 'lucide-react';
 import {
@@ -41,6 +42,7 @@ import { PreSendChecklist } from '@/components/delivery/PreSendChecklist';
 import { usePreSendChecklist } from '@/hooks/usePreSendChecklist';
 import { ScheduleWarningDialog } from '@/components/delivery/ScheduleWarningDialog';
 import { getSchedulingWarnings } from '@/lib/schedule-warnings';
+import { explainDeliveryError } from '@/lib/delivery-errors';
 import type { Project } from '@/types/domain';
 
 interface Props {
@@ -126,6 +128,7 @@ interface FormProps {
 
 function DeliveryComposerForm({ projectId, project, variants }: FormProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const mutation = useCreateDelivery(projectId);
 
   const seed = useMemo(() => {
@@ -258,17 +261,19 @@ function DeliveryComposerForm({ projectId, project, variants }: FormProps) {
       mutation.mutate(values, {
         onSuccess: (result) => {
           if (result.status === 'sent') {
-            toast.success('Delivery sent');
+            toast.success(t('delivery.toasts.sent'));
           } else {
             toast.success(
-              `Delivery scheduled for ${new Date(result.scheduled_for).toLocaleString()}`,
+              t('delivery.toasts.scheduled', {
+                when: new Date(result.scheduled_for).toLocaleString(),
+              }),
             );
           }
           navigate(`/projects/${projectId}/deliveries`);
         },
       });
     },
-    [mutation, navigate, projectId],
+    [mutation, navigate, projectId, t],
   );
 
   const onSubmit = (values: ComposerInput) => {
@@ -320,16 +325,24 @@ function DeliveryComposerForm({ projectId, project, variants }: FormProps) {
         onSubmit={form.handleSubmit(onSubmit)}
         className="space-y-8"
       >
-        {mutation.error && (
-          <Alert variant="destructive">
-            <AlertTitle>
-              <BilingualLabel ja="送信に失敗しました" en="Send failed" />
-            </AlertTitle>
-            <AlertDescription>
-              <code className="text-xs">{mutation.error.message}</code>
-            </AlertDescription>
-          </Alert>
-        )}
+        {mutation.error &&
+          (() => {
+            const explained = explainDeliveryError(mutation.error.message);
+            return (
+              <Alert variant="destructive">
+                <AlertTitle>
+                  <BilingualLabel ja="送信に失敗しました" en="Send failed" />
+                </AlertTitle>
+                <AlertDescription>
+                  {explained ? (
+                    <BilingualLabel ja={explained.ja} en={explained.en} />
+                  ) : (
+                    <code className="text-xs">{mutation.error.message}</code>
+                  )}
+                </AlertDescription>
+              </Alert>
+            );
+          })()}
 
         {/* § 1 — Variants */}
         <section className="space-y-3">

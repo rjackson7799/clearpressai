@@ -139,6 +139,12 @@
   "compliance": {
     "title": "Compliance"
   },
+  "delivery": {
+    "toasts": {
+      "sent": "Delivery sent",
+      "scheduled": "Delivery scheduled for {{when}}"
+    }
+  },
   "guidelines": {
     "title": "Brand Guidelines",
     "addAnnotation": "Add internal note",

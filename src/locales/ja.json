@@ -139,6 +139,12 @@
   "compliance": {
     "title": "コンプライアンス"
   },
+  "delivery": {
+    "toasts": {
+      "sent": "配信を送信しました",
+      "scheduled": "{{when}} に配信を予約しました"
+    }
+  },
   "guidelines": {
     "title": "ブランドガイドライン",
     "addAnnotation": "内部メモを追加",
