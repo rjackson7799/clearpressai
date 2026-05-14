@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { auditReportsKey } from "@/hooks/useAuditReports";
 import { auditReportKey } from "@/hooks/useAuditReport";
@@ -31,7 +32,24 @@ export function useSignAuditReport(projectId: string | undefined) {
       }>("sign-audit-report", {
         body: { audit_report_id: auditReportId },
       });
-      if (error) throw error;
+      if (error) {
+        // supabase-js v2 wraps non-2xx responses in FunctionsHttpError with a
+        // generic message; the real error body is in error.context (Response).
+        // Unwrap it so the user sees the actual P0004 gate or 500 cause
+        // instead of "Edge Function returned a non-2xx status code".
+        if (error instanceof FunctionsHttpError) {
+          try {
+            const body = await error.context.json();
+            const inner = body?.error?.message ?? body?.message;
+            if (inner) throw new Error(inner);
+          } catch (parseError) {
+            if (parseError instanceof Error && parseError.message) {
+              throw parseError;
+            }
+          }
+        }
+        throw error;
+      }
       if (!data || data.error) {
         throw new Error(data?.error?.message ?? "Sign request failed");
       }

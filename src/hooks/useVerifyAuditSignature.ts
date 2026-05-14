@@ -1,4 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
 export interface VerifyAuditSignatureInput {
@@ -30,7 +31,20 @@ export function useVerifyAuditSignature() {
       }>("verify-audit-signature", {
         body: { signature_id: signatureId },
       });
-      if (error) throw error;
+      if (error) {
+        if (error instanceof FunctionsHttpError) {
+          try {
+            const body = await error.context.json();
+            const inner = body?.error?.message ?? body?.message;
+            if (inner) throw new Error(inner);
+          } catch (parseError) {
+            if (parseError instanceof Error && parseError.message) {
+              throw parseError;
+            }
+          }
+        }
+        throw error;
+      }
       if (!data || data.error) {
         throw new Error(data?.error?.message ?? "Verify request failed");
       }
