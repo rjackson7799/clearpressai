@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -39,6 +39,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_config: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       audit_reports: {
         Row: {
           assembled_snapshot: Json | null
@@ -697,15 +715,18 @@ export type Database = {
       deliveries: {
         Row: {
           attachment_format: string
+          audit_report_id: string
           bcc_emails: Json
           body_html: string
           body_text: string | null
           cc_emails: Json
           created_at: string
+          delivery_snapshot: Json
           id: string
           project_id: string
           recipient_email: string
           recipient_name: string | null
+          recommended_variant_id: string | null
           sent_at: string | null
           sent_by: string | null
           status: string
@@ -714,15 +735,18 @@ export type Database = {
         }
         Insert: {
           attachment_format?: string
+          audit_report_id: string
           bcc_emails?: Json
           body_html: string
           body_text?: string | null
           cc_emails?: Json
           created_at?: string
+          delivery_snapshot: Json
           id?: string
           project_id: string
           recipient_email: string
           recipient_name?: string | null
+          recommended_variant_id?: string | null
           sent_at?: string | null
           sent_by?: string | null
           status?: string
@@ -731,15 +755,18 @@ export type Database = {
         }
         Update: {
           attachment_format?: string
+          audit_report_id?: string
           bcc_emails?: Json
           body_html?: string
           body_text?: string | null
           cc_emails?: Json
           created_at?: string
+          delivery_snapshot?: Json
           id?: string
           project_id?: string
           recipient_email?: string
           recipient_name?: string | null
+          recommended_variant_id?: string | null
           sent_at?: string | null
           sent_by?: string | null
           status?: string
@@ -747,6 +774,13 @@ export type Database = {
           variant_ids_attached?: Json
         }
         Relationships: [
+          {
+            foreignKeyName: "deliveries_audit_report_id_fkey"
+            columns: ["audit_report_id"]
+            isOneToOne: false
+            referencedRelation: "audit_reports"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "deliveries_project_id_fkey"
             columns: ["project_id"]
@@ -759,6 +793,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deliveries_recommended_variant_id_fkey"
+            columns: ["recommended_variant_id"]
+            isOneToOne: false
+            referencedRelation: "content_variants"
             referencedColumns: ["id"]
           },
           {
@@ -868,6 +909,7 @@ export type Database = {
       }
       scheduled_sends: {
         Row: {
+          attempts: number
           created_at: string
           delivery_id: string
           error_message: string | null
@@ -877,6 +919,7 @@ export type Database = {
           scheduled_for: string
         }
         Insert: {
+          attempts?: number
           created_at?: string
           delivery_id: string
           error_message?: string | null
@@ -886,6 +929,7 @@ export type Database = {
           scheduled_for: string
         }
         Update: {
+          attempts?: number
           created_at?: string
           delivery_id?: string
           error_message?: string | null
@@ -961,6 +1005,31 @@ export type Database = {
     }
     Functions: {
       _build_audit_snapshot: { Args: { p_project_id: string }; Returns: Json }
+      _latest_finalized_audit_report: {
+        Args: { p_project_id: string }
+        Returns: {
+          assembled_snapshot: Json | null
+          created_at: string
+          created_by: string
+          finalized_at: string | null
+          id: string
+          previous_version_id: string | null
+          project_id: string
+          report_id_display: string
+          report_snapshot: Json | null
+          reviewer_comments: string | null
+          status: string
+          version: string | null
+          version_major: number
+          version_minor: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "audit_reports"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       acknowledge_finding: {
         Args: { p_finding_id: string }
         Returns: {
@@ -1064,6 +1133,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_delivery: {
+        Args: { p_payload: Json; p_scheduled_for: string }
+        Returns: Json
+      }
       finalize_audit_report: {
         Args: {
           p_audit_report_id: string
@@ -1093,9 +1166,101 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_firm_config_public: { Args: never; Returns: Json }
+      mark_delivery_failed: {
+        Args: { p_delivery_id: string; p_error_message: string }
+        Returns: {
+          attachment_format: string
+          audit_report_id: string
+          bcc_emails: Json
+          body_html: string
+          body_text: string | null
+          cc_emails: Json
+          created_at: string
+          delivery_snapshot: Json
+          id: string
+          project_id: string
+          recipient_email: string
+          recipient_name: string | null
+          recommended_variant_id: string | null
+          sent_at: string | null
+          sent_by: string | null
+          status: string
+          subject: string
+          variant_ids_attached: Json
+        }
+        SetofOptions: {
+          from: "*"
+          to: "deliveries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      mark_delivery_sent_system: {
+        Args: { p_delivery_id: string; p_resend_message_id: string }
+        Returns: {
+          attachment_format: string
+          audit_report_id: string
+          bcc_emails: Json
+          body_html: string
+          body_text: string | null
+          cc_emails: Json
+          created_at: string
+          delivery_snapshot: Json
+          id: string
+          project_id: string
+          recipient_email: string
+          recipient_name: string | null
+          recommended_variant_id: string | null
+          sent_at: string | null
+          sent_by: string | null
+          status: string
+          subject: string
+          variant_ids_attached: Json
+        }
+        SetofOptions: {
+          from: "*"
+          to: "deliveries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      mark_delivery_sent_user: {
+        Args: { p_delivery_id: string; p_resend_message_id: string }
+        Returns: {
+          attachment_format: string
+          audit_report_id: string
+          bcc_emails: Json
+          body_html: string
+          body_text: string | null
+          cc_emails: Json
+          created_at: string
+          delivery_snapshot: Json
+          id: string
+          project_id: string
+          recipient_email: string
+          recipient_name: string | null
+          recommended_variant_id: string | null
+          sent_at: string | null
+          sent_by: string | null
+          status: string
+          subject: string
+          variant_ids_attached: Json
+        }
+        SetofOptions: {
+          from: "*"
+          to: "deliveries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       record_manual_review_started: {
         Args: { p_project_id: string; p_variant_id: string }
         Returns: undefined
+      }
+      record_scheduled_attempt_failure: {
+        Args: { p_error_message: string; p_scheduled_send_id: string }
+        Returns: Json
       }
       regenerate_variant: {
         Args: {
