@@ -264,7 +264,7 @@ function DeliveryComposerForm({ projectId, project, variants }: FormProps) {
               `Delivery scheduled for ${new Date(result.scheduled_for).toLocaleString()}`,
             );
           }
-          navigate(`/projects/${projectId}/audit`);
+          navigate(`/projects/${projectId}/deliveries`);
         },
       });
     },

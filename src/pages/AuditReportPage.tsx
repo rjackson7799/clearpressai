@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import {
   FileTextIcon,
   GitBranchIcon,
+  MailIcon,
   PrinterIcon,
   SendIcon,
   ShieldCheckIcon,
@@ -122,6 +123,12 @@ export default function AuditReportPage() {
           <Button variant="outline" asChild>
             <Link to={`/projects/${projectId}/review`}>
               <BilingualLabel ja="レビューに戻る" en="Back to review" />
+            </Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link to={`/projects/${projectId}/deliveries`}>
+              <MailIcon className="size-4" />
+              <BilingualLabel ja="配信履歴" en="Deliveries" />
             </Link>
           </Button>
           {selectedReport && (selectedReport.status === "finalized" || selectedReport.status === "revised") && (
