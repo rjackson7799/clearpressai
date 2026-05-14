@@ -15,6 +15,7 @@ import ProjectsListPage from "@/pages/ProjectsListPage";
 import NewProjectPage from "@/pages/NewProjectPage";
 import VariantReviewPage from "@/pages/VariantReviewPage";
 import AuditReportPage from "@/pages/AuditReportPage";
+import DeliveryComposerPage from "@/pages/DeliveryComposerPage";
 import PrintAuditReportPage from "@/pages/PrintAuditReportPage";
 
 export default function App() {
@@ -41,6 +42,7 @@ export default function App() {
             <Route path="/projects/new" element={<NewProjectPage />} />
             <Route path="/projects/:id/review" element={<VariantReviewPage />} />
             <Route path="/projects/:id/audit" element={<AuditReportPage />} />
+            <Route path="/projects/:id/deliver" element={<DeliveryComposerPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>

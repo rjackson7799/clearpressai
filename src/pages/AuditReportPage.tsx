@@ -5,6 +5,7 @@ import {
   FileTextIcon,
   GitBranchIcon,
   PrinterIcon,
+  SendIcon,
   ShieldCheckIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -198,6 +199,14 @@ export default function AuditReportPage() {
                 >
                   <GitBranchIcon className="size-4" />
                   <BilingualLabel ja="改訂を要求" en="Request revision" />
+                </Button>
+              )}
+              {selectedReport.status === "finalized" && (
+                <Button asChild>
+                  <Link to={`/projects/${projectId}/deliver`}>
+                    <SendIcon className="size-4" />
+                    <BilingualLabel ja="配信を作成" en="Compose delivery" />
+                  </Link>
                 </Button>
               )}
               {selectedReport.status === "finalized" &&

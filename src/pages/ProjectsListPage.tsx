@@ -143,6 +143,7 @@ export default function ProjectsListPage() {
               <TableHead>
                 <BilingualLabel ja="最終生成" en="Last generated" />
               </TableHead>
+              <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -212,6 +213,19 @@ export default function ProjectsListPage() {
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {formatDate(row.last_generated_at, i18n.language)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {row.id &&
+                      (row.status === 'in_review' ||
+                        row.status === 'delivered') && (
+                        <Link
+                          to={`/projects/${row.id}/deliver`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-xs underline-offset-2 hover:underline text-primary"
+                        >
+                          <BilingualLabel ja="配信 →" en="Deliver →" />
+                        </Link>
+                      )}
                   </TableCell>
                 </TableRow>
               );
