@@ -88,29 +88,11 @@ export const ComposerInputSchema = z.object({
   scheduled_for: z.string().datetime().nullable().optional(),
 });
 
-export const FeedbackLoadResponseSchema = z.object({
-  delivery: z.object({
-    subject: z.string(),
-    recipient_name: z.string().nullable(),
-    sent_at: z.string().nullable(),
-    audit_report_version: z.string(),
-  }),
-  project: z.object({
-    name: z.string(),
-  }),
-  content_item: z.object({
-    content_sub_type: ContentSubTypeSchema,
-  }),
-  variants: z.array(SnapshotVariantSchema),
-  recommended_variant_id: z.string().uuid().nullable(),
-  expires_at: z.string(),
-});
 // drift:end DELIVERY_TYPES
 
 export type DeliverySnapshot = z.infer<typeof DeliverySnapshotSchema>;
 export type SnapshotVariant = z.infer<typeof SnapshotVariantSchema>;
 export type ComposerInput = z.infer<typeof ComposerInputSchema>;
-export type FeedbackLoadResponse = z.infer<typeof FeedbackLoadResponseSchema>;
 export type SchedulingWarning = z.infer<typeof SchedulingWarningSchema>;
 export type AttachmentFormat = z.infer<typeof AttachmentFormatSchema>;
 export type ContentSubType = z.infer<typeof ContentSubTypeSchema>;

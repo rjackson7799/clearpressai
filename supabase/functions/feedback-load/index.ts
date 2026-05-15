@@ -1,62 +1,68 @@
 /**
  * feedback-load — Edge Function (--no-verify-jwt, anonymous)
  *
- * Phase 5 ships the LOADER half of the feedback magic-link experience. The
- * actual feedback page is Phase 6; this endpoint exists now so the magic-
- * link works end-to-end at hand-off.
+ * Phase 6 T3 rewrite: routes through the `get_feedback_load_data` RPC for
+ * server-side classification (ok / already_submitted / invalid) and emits the
+ * curated discriminated-union DTO defined in
+ * `src/lib/types/feedback.ts` → `FeedbackLoadResponseSchema`.
  *
  * Trust model:
- *   - Caller is anonymous. Auth is by holding the 32-byte URL-safe-base64
- *     token only.
- *   - Service-role client is used for the lookup; RLS does NOT gate
- *     feedback_tokens reads in this code path by design.
- *   - External response collapses to opaque {error:'token_invalid'} on any
- *     failure (not found / expired / format mismatch). The internal reason
- *     lives in server logs only -- prevents timing + content side-channels
- *     that would otherwise help an attacker probe the token namespace.
- *   - 32 bytes of entropy = 256 bits; brute force is infeasible even with
- *     no rate limit. v2 will add per-IP + per-token rate limits.
+ *   - Caller is anonymous. Auth is by holding the 43-char URL-safe-base64
+ *     token only. 32 bytes of entropy = 256 bits; brute force is infeasible.
+ *   - Service-role client; RLS does not gate the lookups here by design.
+ *   - External response collapses not-found / expired / format-mismatch to
+ *     {status: 'invalid'}. Internal reason lives in server logs only — keeps
+ *     timing + content side-channels closed against token-namespace probing.
+ *
+ * HTTP status: 200 for all three discriminated-union branches. The body's
+ * `data.status` field is the discriminant. Only true 5xx errors are non-2xx.
  *
  * Token consumption:
- *   - used_at is NOT a gate here. The link is repeatable until expiry;
- *     only feedback-submit (Phase 6) flips used_at.
+ *   - used_at is NOT a gate at load time. The page can re-load until expiry;
+ *     only feedback-submit (Phase 6 T4) flips used_at. used_at becoming non-
+ *     null returns `{status: 'already_submitted', submitted_at}` so the page
+ *     can render the friendly confirmation card.
  *
- * Response shape (anonymous-safe subset of delivery_snapshot):
+ * Curated public DTO (ok branch, anonymous-safe subset of delivery_snapshot):
  *   - delivery: subject, recipient_name, sent_at, audit_report_version
  *   - project: name
  *   - content_item: content_sub_type
  *   - variants: [{ id, variant_label, variant_index, body_html, body_text,
  *                  variation_directive, char_count }]
  *   - recommended_variant_id
+ *   - sender: { from_name }  ← added in Phase 6 per PRD §5.5 ("from the firm")
  *   - expires_at
  * Explicitly EXCLUDED (would leak internal process to anonymous callers):
- *   internal user names, sender email, BCC list, compliance findings,
- *   internal_approved_at, scheduling_warnings.
+ *   sender.from_email / reply_to_email / sent_by_email_snapshot,
+ *   recipient.cc_emails / bcc_emails_effective, audit_report.signature_hash,
+ *   scheduling_warnings, compliance findings, internal user names.
  */
-import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
 import { handlePreflight } from '../_shared/cors.ts';
 import { jsonError, jsonResponse } from '../_shared/errors.ts';
 import { isValidTokenFormat } from '../_shared/magic-link.ts';
-import type {
-  DeliverySnapshot,
-  FeedbackLoadResponse,
-} from '../_shared/types-delivery.ts';
+import type { DeliverySnapshot } from '../_shared/types-delivery.ts';
+import type { FeedbackLoadResponse } from '../_shared/types-feedback.ts';
 
-const InputSchema = z.object({ token: z.string() });
-
-type Reason =
+type InvalidReason =
   | 'token_format_mismatch'
-  | 'token_not_found'
-  | 'token_expired'
-  | 'delivery_not_found'
-  | 'snapshot_missing';
+  | 'token_invalid_from_rpc'
+  | 'delivery_lookup_failed';
 
-function opaqueInvalid(reason: Reason, token: string): Response {
+function logOpaque(reason: InvalidReason, token: string): void {
   console.warn(
-    JSON.stringify({ event: 'token_invalid', reason, token_prefix: token.slice(0, 4) }),
+    JSON.stringify({
+      event: 'token_invalid',
+      reason,
+      token_prefix: token.slice(0, 4),
+    }),
   );
-  return jsonError(404, { code: 'not_found', message: 'token_invalid' });
+}
+
+function invalidResponse(reason: InvalidReason, token: string): Response {
+  logOpaque(reason, token);
+  const body: FeedbackLoadResponse = { status: 'invalid' };
+  return jsonResponse(200, { data: body, error: null });
 }
 
 Deno.serve(async (req: Request) => {
@@ -79,17 +85,13 @@ Deno.serve(async (req: Request) => {
       message: 'Body must be valid JSON',
     });
   }
-  const parsed = InputSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    return jsonError(400, {
-      code: 'validation_error',
-      message: 'Invalid input',
-    });
-  }
-  const { token } = parsed.data;
+  const token =
+    typeof rawBody === 'object' && rawBody !== null && 'token' in rawBody
+      ? String((rawBody as { token: unknown }).token)
+      : '';
 
   if (!isValidTokenFormat(token)) {
-    return opaqueInvalid('token_format_mismatch', token);
+    return invalidResponse('token_format_mismatch', token);
   }
 
   const url = Deno.env.get('SUPABASE_URL');
@@ -102,49 +104,63 @@ Deno.serve(async (req: Request) => {
   }
   const supabase = createClient(url, serviceKey);
 
-  const { data: tokenRow, error: tokenErr } = await supabase
+  const { data: rpcData, error: rpcErr } = await supabase.rpc(
+    'get_feedback_load_data',
+    { p_token: token },
+  );
+  if (rpcErr) {
+    return jsonError(500, {
+      code: 'internal_error',
+      message: `get_feedback_load_data failed: ${rpcErr.message}`,
+    });
+  }
+
+  const status = (rpcData as { status?: string } | null)?.status;
+
+  if (status === 'invalid' || !status) {
+    return invalidResponse('token_invalid_from_rpc', token);
+  }
+
+  if (status === 'already_submitted') {
+    const submittedAt = (rpcData as { submitted_at: string }).submitted_at;
+    const body: FeedbackLoadResponse = {
+      status: 'already_submitted',
+      submitted_at: submittedAt,
+    };
+    return jsonResponse(200, { data: body, error: null });
+  }
+
+  // status === 'ok' — curate the public DTO from delivery_snapshot + a small
+  // SELECT for fields not carried in the snapshot (subject, sent_at, expires_at).
+  const snapshot = (rpcData as { delivery_snapshot: DeliverySnapshot })
+    .delivery_snapshot;
+
+  const { data: lookups, error: lookupErr } = await supabase
     .from('feedback_tokens')
-    .select('delivery_id, expires_at')
+    .select(
+      'expires_at, delivery:deliveries!inner(id, subject, sent_at, recommended_variant_id)',
+    )
     .eq('token', token)
     .maybeSingle();
-  if (tokenErr) {
-    return jsonError(500, {
-      code: 'internal_error',
-      message: `feedback_tokens lookup failed: ${tokenErr.message}`,
-    });
+  if (lookupErr || !lookups) {
+    return invalidResponse('delivery_lookup_failed', token);
   }
-  if (!tokenRow) {
-    return opaqueInvalid('token_not_found', token);
-  }
-  if (new Date(tokenRow.expires_at).getTime() <= Date.now()) {
-    return opaqueInvalid('token_expired', token);
-  }
+  const delivery = (lookups as unknown as {
+    expires_at: string;
+    delivery: {
+      id: string;
+      subject: string;
+      sent_at: string | null;
+      recommended_variant_id: string | null;
+    };
+  }).delivery;
+  const expiresAt = (lookups as unknown as { expires_at: string }).expires_at;
 
-  const { data: delivery, error: dErr } = await supabase
-    .from('deliveries')
-    .select(
-      'id, subject, recipient_name, sent_at, delivery_snapshot, recommended_variant_id',
-    )
-    .eq('id', tokenRow.delivery_id)
-    .maybeSingle();
-  if (dErr) {
-    return jsonError(500, {
-      code: 'internal_error',
-      message: `deliveries lookup failed: ${dErr.message}`,
-    });
-  }
-  if (!delivery) {
-    return opaqueInvalid('delivery_not_found', token);
-  }
-  const snapshot = delivery.delivery_snapshot as DeliverySnapshot | null;
-  if (!snapshot) {
-    return opaqueInvalid('snapshot_missing', token);
-  }
-
-  const response: FeedbackLoadResponse = {
+  const body: FeedbackLoadResponse = {
+    status: 'ok',
     delivery: {
       subject: delivery.subject,
-      recipient_name: delivery.recipient_name ?? null,
+      recipient_name: snapshot.recipient.name ?? null,
       sent_at: delivery.sent_at ?? null,
       audit_report_version: `${snapshot.audit_report.version_major}.${snapshot.audit_report.version_minor}`,
     },
@@ -160,8 +176,9 @@ Deno.serve(async (req: Request) => {
       char_count: v.char_count,
     })),
     recommended_variant_id: delivery.recommended_variant_id ?? null,
-    expires_at: tokenRow.expires_at,
+    sender: { from_name: snapshot.sender.from_name },
+    expires_at: expiresAt,
   };
 
-  return jsonResponse(200, { data: response, error: null });
+  return jsonResponse(200, { data: body, error: null });
 });

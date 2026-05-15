@@ -4,7 +4,6 @@ import denoSrc from '../../supabase/functions/_shared/types-delivery.ts?raw';
 import {
   ComposerInputSchema,
   DeliverySnapshotSchema,
-  FeedbackLoadResponseSchema,
 } from '../lib/types/delivery';
 
 function extractDriftRegion(src: string, name: string): string {
@@ -140,31 +139,3 @@ describe('ComposerInputSchema (zod shape)', () => {
   });
 });
 
-describe('FeedbackLoadResponseSchema (excludes internal fields)', () => {
-  it('parses a sample response', () => {
-    const response = {
-      delivery: {
-        subject: 'Press release',
-        recipient_name: 'Client Co',
-        sent_at: '2026-05-13T10:00:00.000Z',
-        audit_report_version: '1.0',
-      },
-      project: { name: 'Q1 Press' },
-      content_item: { content_sub_type: 'partner_ack' as const },
-      variants: [
-        {
-          id: '33333333-3333-4333-8333-333333333333',
-          variant_label: 'Concise',
-          variant_index: 1,
-          body_html: '<p>x</p>',
-          body_text: 'x',
-          variation_directive: null,
-          char_count: 100,
-        },
-      ],
-      recommended_variant_id: null,
-      expires_at: '2026-06-13T10:00:00.000Z',
-    };
-    expect(() => FeedbackLoadResponseSchema.parse(response)).not.toThrow();
-  });
-});
