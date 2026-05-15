@@ -21,10 +21,19 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  * INTO the RPC for true atomicity.
  */
 
+/**
+ * `feedback_received` and `voice_updated` are emitted from PL/pgSQL RPCs
+ * (`submit_feedback`, `append_voice_guidelines_from_feedback`) in migration
+ * 0009, not via `recordAuditEvent`. The enum is widened here so any future
+ * Edge Function caller — and any audit-trail consumer importing this type —
+ * stays type-safe across the full Phase 6 event surface.
+ */
 export type ServerAuditEventType =
   | 'variant_generated'
   | 'compliance_checked'
-  | 'compliance_rechecked';
+  | 'compliance_rechecked'
+  | 'feedback_received'
+  | 'voice_updated';
 
 export interface RecordAuditEventInput {
   projectId: string;
