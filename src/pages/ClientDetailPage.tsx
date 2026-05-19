@@ -28,6 +28,7 @@ import { SampleUploader } from "@/components/brand-voice/SampleUploader";
 import { SampleList } from "@/components/brand-voice/SampleList";
 import { VoiceProfileEditor } from "@/components/brand-voice/VoiceProfileEditor";
 import { GuidelinesPanel } from "@/components/brand-voice/GuidelinesPanel";
+import { ClientFeedbackTab } from "@/components/feedback/ClientFeedbackTab";
 
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -124,6 +125,9 @@ export default function ClientDetailPage() {
           <TabsTrigger value="guidelines">
             <BilingualLabel ja="ガイドライン" en="Guidelines" />
           </TabsTrigger>
+          <TabsTrigger value="feedback">
+            <BilingualLabel ja="フィードバック" en="Feedback" />
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="pt-6">
@@ -159,6 +163,10 @@ export default function ClientDetailPage() {
 
         <TabsContent value="guidelines" className="pt-6">
           <GuidelinesPanel clientId={id} />
+        </TabsContent>
+
+        <TabsContent value="feedback" className="pt-6">
+          <ClientFeedbackTab clientId={id} />
         </TabsContent>
       </Tabs>
 
