@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
+import { BilingualLabel } from '@/components/shared/BilingualLabel';
 import { FeedbackChipGroup } from './FeedbackChipGroup';
 import {
   WHAT_WORKED_PRESETS,
@@ -38,7 +39,7 @@ interface Props {
   loaded: FeedbackLoadOk;
   onSubmit: (input: FeedbackSubmitBody) => void;
   isPending: boolean;
-  errorMessage: string | null;
+  errorMessage: { ja: string; en: string } | null;
 }
 
 export function FeedbackForm({ loaded, onSubmit, isPending, errorMessage }: Props) {
@@ -203,7 +204,7 @@ export function FeedbackForm({ loaded, onSubmit, isPending, errorMessage }: Prop
           role="alert"
           className="rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive"
         >
-          {errorMessage}
+          <BilingualLabel ja={errorMessage.ja} en={errorMessage.en} />
         </div>
       )}
 

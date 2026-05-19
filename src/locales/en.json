@@ -145,6 +145,12 @@
       "scheduled": "Delivery scheduled for {{when}}"
     }
   },
+  "feedback": {
+    "toasts": {
+      "submitted": "Feedback submitted",
+      "failed": "Failed to submit feedback"
+    }
+  },
   "guidelines": {
     "title": "Brand Guidelines",
     "addAnnotation": "Add internal note",

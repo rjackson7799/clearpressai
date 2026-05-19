@@ -145,6 +145,12 @@
       "scheduled": "{{when}} に配信を予約しました"
     }
   },
+  "feedback": {
+    "toasts": {
+      "submitted": "フィードバックを送信しました",
+      "failed": "送信に失敗しました"
+    }
+  },
   "guidelines": {
     "title": "ブランドガイドライン",
     "addAnnotation": "内部メモを追加",

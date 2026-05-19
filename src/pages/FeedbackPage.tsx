@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { LinkIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -8,6 +10,7 @@ import { FeedbackForm } from '@/components/feedback/FeedbackForm';
 import { FeedbackConfirmation } from '@/components/feedback/FeedbackConfirmation';
 import { useFeedbackLoad } from '@/hooks/useFeedbackLoad';
 import { useFeedbackSubmit } from '@/hooks/useFeedbackSubmit';
+import { explainFeedbackError } from '@/lib/feedback-errors';
 
 /**
  * /f/:token — public feedback page (outside AppShell + ProtectedRoute).
@@ -25,6 +28,7 @@ import { useFeedbackSubmit } from '@/hooks/useFeedbackSubmit';
  */
 export default function FeedbackPage() {
   const { token } = useParams<{ token: string }>();
+  const { t } = useTranslation();
   const loadQ = useFeedbackLoad(token);
   const submitM = useFeedbackSubmit(token);
 
@@ -83,13 +87,24 @@ export default function FeedbackPage() {
               loaded={loadQ.data}
               onSubmit={(input) =>
                 submitM.mutate(input, {
-                  onSuccess: () =>
-                    setJustSubmittedAt(new Date().toISOString()),
+                  onSuccess: () => {
+                    setJustSubmittedAt(new Date().toISOString());
+                    toast.success(t('feedback.toasts.submitted'));
+                  },
+                  onError: () => {
+                    toast.error(t('feedback.toasts.failed'));
+                  },
                 })
               }
               isPending={submitM.isPending}
               errorMessage={
-                submitM.isError ? friendlyError(submitM.error) : null
+                submitM.isError
+                  ? explainFeedbackError(
+                      submitM.error instanceof Error
+                        ? submitM.error.message
+                        : String(submitM.error),
+                    )
+                  : null
               }
             />
           </div>
@@ -152,14 +167,4 @@ function Intro({ projectName }: { projectName: string }) {
       </CardContent>
     </Card>
   );
-}
-
-function friendlyError(error: unknown): string {
-  const raw = error instanceof Error ? error.message : String(error);
-  // T8 will replace this with a localized-message map; for now, surface
-  // the gate code as-is (token_invalid being the common case).
-  if (raw === 'token_invalid') {
-    return 'このリンクは無効です / Link no longer valid';
-  }
-  return raw;
 }
