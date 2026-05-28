@@ -1,0 +1,11 @@
+{
+  "imports": {
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@^2.105.4",
+    "@anthropic-ai/sdk": "npm:@anthropic-ai/sdk@^0.95.2",
+    "zod": "npm:zod@^4.4.3"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window"],
+    "strict": true
+  }
+}

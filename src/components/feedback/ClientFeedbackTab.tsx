@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   AlertTriangleIcon,
   ExternalLinkIcon,
@@ -7,6 +8,7 @@ import {
   RefreshCcwIcon,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BilingualLabel } from '@/components/shared/BilingualLabel';
@@ -15,6 +17,7 @@ import {
   useClientFeedback,
   type ClientFeedbackRow,
 } from '@/hooks/useClientFeedback';
+import { useRetriggerFeedbackDelta } from '@/hooks/useRetriggerFeedbackDelta';
 
 interface Props {
   clientId: string;
@@ -76,6 +79,29 @@ function toStringArray(value: unknown): string[] {
 export function ClientFeedbackTab({ clientId }: Props) {
   const feedbackQ = useClientFeedback(clientId);
   const guidelinesQ = useFeedbackSourcedGuidelines(clientId);
+  const retriggerM = useRetriggerFeedbackDelta(clientId);
+
+  const handleRetry = (feedbackId: string) => {
+    retriggerM.mutate(
+      { feedback_id: feedbackId },
+      {
+        onSuccess: (result) => {
+          if (result.delta_status === 'succeeded') {
+            toast.success(
+              'ガイドラインを再生成しました / Guidelines regenerated',
+            );
+          } else {
+            toast.error(
+              'ガイドライン抽出が再度失敗しました / Guideline extraction failed again',
+            );
+          }
+        },
+        onError: (err) => {
+          toast.error(err.message);
+        },
+      },
+    );
+  };
 
   if (feedbackQ.isLoading || guidelinesQ.isLoading) {
     return (
@@ -124,6 +150,10 @@ export function ClientFeedbackTab({ clientId }: Props) {
           key={row.id}
           row={row}
           guidelines={guidelinesByFeedback[row.id] ?? []}
+          onRetry={handleRetry}
+          retryPending={
+            retriggerM.isPending && retriggerM.variables?.feedback_id === row.id
+          }
         />
       ))}
     </div>
@@ -133,9 +163,13 @@ export function ClientFeedbackTab({ clientId }: Props) {
 function FeedbackRow({
   row,
   guidelines,
+  onRetry,
+  retryPending,
 }: {
   row: ClientFeedbackRow;
   guidelines: GuidelineLite[];
+  onRetry: (feedbackId: string) => void;
+  retryPending: boolean;
 }) {
   const worked = toStringArray(row.what_worked);
   const improve = toStringArray(row.what_could_improve);
@@ -254,16 +288,39 @@ function FeedbackRow({
               ))}
             </ul>
           </div>
-        ) : row.delta_generation_status === 'failed' && row.delta_error ? (
-          <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-            <div className="font-medium">
-              <BilingualLabel
-                ja="ガイドライン抽出に失敗しました"
-                en="Guideline extraction failed"
-              />
-            </div>
-            <div className="mt-0.5 break-words font-mono text-[11px]">
-              {row.delta_error}
+        ) : row.delta_generation_status === 'failed' ? (
+          <div className="space-y-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="font-medium">
+                  <BilingualLabel
+                    ja="ガイドライン抽出に失敗しました"
+                    en="Guideline extraction failed"
+                  />
+                </div>
+                {row.delta_error && (
+                  <div className="mt-0.5 break-words font-mono text-[11px]">
+                    {row.delta_error}
+                  </div>
+                )}
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={retryPending}
+                onClick={() => onRetry(row.id)}
+                className="shrink-0"
+              >
+                <RefreshCcwIcon
+                  className={`mr-1 size-3 ${retryPending ? 'animate-spin' : ''}`}
+                />
+                <BilingualLabel
+                  ja="再試行"
+                  en="Retry"
+                  className="text-xs"
+                />
+              </Button>
             </div>
           </div>
         ) : null}

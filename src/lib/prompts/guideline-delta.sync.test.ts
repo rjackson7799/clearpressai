@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import vitePromptSrc from './guideline-delta.ts?raw';
-import edgePromptSrc from '../../../supabase/functions/feedback-submit/_prompt.ts?raw';
+import edgePromptSrc from '../../../supabase/functions/_shared/guideline-delta-prompt.ts?raw';
 import {
   CLAUDE_MODELS,
   VoiceGuidelineDeltaResponseSchema,

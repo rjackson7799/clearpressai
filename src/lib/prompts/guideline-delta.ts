@@ -5,8 +5,8 @@
  * client submits feedback. Output is fed to the `append_voice_guidelines_from_feedback`
  * RPC which writes the rows + emits the `voice_updated` audit event.
  *
- * Mirror file: `supabase/functions/feedback-submit/_prompt.ts`. Drift-guarded
- * by `guideline-delta.sync.test.ts` — regions delimited by
+ * Mirror file: `supabase/functions/_shared/guideline-delta-prompt.ts`.
+ * Drift-guarded by `guideline-delta.sync.test.ts` — regions delimited by
  * `// drift:start NAME` / `// drift:end NAME` are byte-equality checked
  * across both files (H10 audit-fix convention from Phase 3/4).
  */

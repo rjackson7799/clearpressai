@@ -48,7 +48,7 @@ import {
   VOICE_GUIDELINE_DELTA_SYSTEM,
   VoiceGuidelineDeltaResponseSchema,
   buildGuidelineDeltaUserMessage,
-} from './_prompt.ts';
+} from '../_shared/guideline-delta-prompt.ts';
 
 type InvalidReason =
   | 'token_format_mismatch'
