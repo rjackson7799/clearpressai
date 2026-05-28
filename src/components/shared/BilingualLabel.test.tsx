@@ -12,7 +12,7 @@ describe("BilingualLabel", () => {
     const secondary = screen.getByText("Sample Materials");
     expect(primary).toBeInTheDocument();
     expect(secondary).toBeInTheDocument();
-    expect(secondary.className).toMatch(/text-muted-foreground/);
+    expect(secondary.className).toMatch(/opacity-60/);
   });
 
   it("renders both languages when language is en (en primary)", async () => {
@@ -22,6 +22,6 @@ describe("BilingualLabel", () => {
     const secondary = screen.getByText("サンプル素材");
     expect(primary).toBeInTheDocument();
     expect(secondary).toBeInTheDocument();
-    expect(secondary.className).toMatch(/text-muted-foreground/);
+    expect(secondary.className).toMatch(/opacity-60/);
   });
 });

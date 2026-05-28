@@ -10,8 +10,8 @@ export function BilingualLabel({ ja, en, className }: Props) {
 
   return (
     <span className={className}>
-      <span className="text-foreground">{primary}</span>
-      <span className="text-muted-foreground ml-2 text-sm">{secondary}</span>
+      <span>{primary}</span>
+      <span className="ml-2 text-sm opacity-60">{secondary}</span>
     </span>
   );
 }
