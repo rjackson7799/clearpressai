@@ -39,21 +39,6 @@ const STATUS_LABELS: Record<string, { ja: string; en: string }> = {
   completed: { ja: '完了', en: 'Completed' },
 };
 
-const URGENCY_LABELS: Record<string, { ja: string; en: string }> = {
-  standard: { ja: '通常', en: 'Standard' },
-  priority: { ja: '優先', en: 'Priority' },
-  urgent: { ja: '緊急', en: 'Urgent' },
-  crisis: { ja: '危機', en: 'Crisis' },
-};
-
-const URGENCY_VARIANT: Record<string, 'default' | 'secondary' | 'destructive'> =
-  {
-    standard: 'secondary',
-    priority: 'default',
-    urgent: 'destructive',
-    crisis: 'destructive',
-  };
-
 export default function ProjectsListPage() {
   const { i18n } = useTranslation();
   const navigate = useNavigate();
@@ -132,16 +117,7 @@ export default function ProjectsListPage() {
                 <BilingualLabel ja="状態" en="Status" />
               </TableHead>
               <TableHead>
-                <BilingualLabel ja="緊急度" en="Urgency" />
-              </TableHead>
-              <TableHead>
                 <BilingualLabel ja="締切" en="Deadline" />
-              </TableHead>
-              <TableHead>
-                <BilingualLabel ja="承認" en="Approved" />
-              </TableHead>
-              <TableHead>
-                <BilingualLabel ja="最終生成" en="Last generated" />
               </TableHead>
               <TableHead />
             </TableRow>
@@ -152,9 +128,6 @@ export default function ProjectsListPage() {
                 ? CONTENT_TYPE_LABELS[row.content_type]
                 : null;
               const statusLabel = row.status ? STATUS_LABELS[row.status] : null;
-              const urgencyLabel = row.urgency
-                ? URGENCY_LABELS[row.urgency]
-                : null;
               return (
                 <TableRow
                   key={row.id ?? `${row.client_id}-${row.name}`}
@@ -189,30 +162,8 @@ export default function ProjectsListPage() {
                       '—'
                     )}
                   </TableCell>
-                  <TableCell>
-                    {urgencyLabel ? (
-                      <Badge
-                        variant={
-                          row.urgency ? URGENCY_VARIANT[row.urgency] : 'secondary'
-                        }
-                      >
-                        <BilingualLabel
-                          ja={urgencyLabel.ja}
-                          en={urgencyLabel.en}
-                        />
-                      </Badge>
-                    ) : (
-                      '—'
-                    )}
-                  </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {formatDate(row.deadline, i18n.language)}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {row.variants_approved ?? 0} / {row.variants_total ?? 0}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {formatDate(row.last_generated_at, i18n.language)}
                   </TableCell>
                   <TableCell className="text-right">
                     {row.id &&
