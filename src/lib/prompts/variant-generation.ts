@@ -21,7 +21,7 @@ import { CLAUDE_MODELS } from './brand-voice';
 
 export { CLAUDE_MODELS };
 
-export const VARIANT_GENERATION_PROMPT_VERSION = 'v1-phase3-baseline';
+export const VARIANT_GENERATION_PROMPT_VERSION = 'v1-phase7-length-cap';
 
 export type ContentSubType =
   | 'auto'
@@ -140,11 +140,13 @@ CLIENT VOICE PROFILE:
 ADDITIONAL GUIDELINES (accumulated from feedback and internal review):
 ${guidelinesBlock}
 
-CONTENT SUB-TYPE LENGTH NORMS (override the profile's length string when content_type is press_release):
+CONTENT SUB-TYPE LENGTH CAP (HARD — overrides the profile's length string AND any length pull from the variation directive):
 - full_clinical (完全臨床発表): 1,200–2,000字. Includes endpoint data, study design, full safety profile.
 - partner_ack (パートナー謝辞): 700–1,200字. Brief, focused on the partnership and named executives.
 - csr_event (CSR/イベント): 800–1,500字. Activity-focused, may include event details.
 - business_news (ビジネスニュース): 700–1,300字. Corporate / organizational announcements.
+
+LENGTH PRECEDENCE: The sub-type cap above is authoritative. If the variation directive implies a longer or shorter style (e.g. "accessible" / "patient-impact lead" / "detailed"), express that style WITHIN the cap by tightening word choice and trimming background — not by exceeding the upper bound. Before emitting, mentally count characters; if over the cap, condense (remove background paragraphs, tighten phrasing) until inside it.
 
 SUB-TYPE: ${subType}
 ${subTypeBlock}
