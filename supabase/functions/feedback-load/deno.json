@@ -1,7 +1,8 @@
 {
   "imports": {
     "@supabase/supabase-js": "npm:@supabase/supabase-js@^2.105.4",
-    "zod": "npm:zod@^4.4.3"
+    "zod": "npm:zod@^4.4.3",
+    "sanitize-html": "npm:sanitize-html@^2.13.1"
   },
   "compilerOptions": {
     "lib": ["deno.window"],
