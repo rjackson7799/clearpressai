@@ -423,7 +423,9 @@ export type Database = {
       }
       client_feedback: {
         Row: {
-          chosen_variant_id: string
+          chosen_variant_id: string | null
+          delta_error: string | null
+          delta_generation_status: string
           feedback_token_id: string
           free_text_comment: string | null
           id: string
@@ -433,7 +435,9 @@ export type Database = {
           what_worked: Json
         }
         Insert: {
-          chosen_variant_id: string
+          chosen_variant_id?: string | null
+          delta_error?: string | null
+          delta_generation_status?: string
           feedback_token_id: string
           free_text_comment?: string | null
           id?: string
@@ -443,7 +447,9 @@ export type Database = {
           what_worked?: Json
         }
         Update: {
-          chosen_variant_id?: string
+          chosen_variant_id?: string | null
+          delta_error?: string | null
+          delta_generation_status?: string
           feedback_token_id?: string
           free_text_comment?: string | null
           id?: string
@@ -1053,6 +1059,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      append_voice_guidelines_from_feedback: {
+        Args: { p_feedback_id: string; p_guidelines: string[] }
+        Returns: string[]
+      }
       apply_fix: {
         Args: {
           p_finding_id: string
@@ -1166,6 +1176,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_feedback_load_data: { Args: { p_token: string }; Returns: Json }
       get_firm_config_public: { Args: never; Returns: Json }
       mark_delivery_failed: {
         Args: { p_delivery_id: string; p_error_message: string }
@@ -1254,6 +1265,20 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      record_compliance_check: {
+        Args: {
+          p_audit_details: Json
+          p_findings: Json
+          p_model_used: string
+          p_project_id: string
+          p_variant_id: string
+        }
+        Returns: Json
+      }
+      record_feedback_delta_failure: {
+        Args: { p_error: string; p_feedback_id: string }
+        Returns: undefined
+      }
       record_manual_review_started: {
         Args: { p_project_id: string; p_variant_id: string }
         Returns: undefined
@@ -1264,11 +1289,15 @@ export type Database = {
       }
       regenerate_variant: {
         Args: {
+          p_actor_id: string
+          p_actor_name_snapshot: string
+          p_audit_details: Json
           p_body_text: string
           p_char_count: number
           p_content_item_id: string
           p_generation_params: Json
           p_model_used: string
+          p_project_id: string
           p_reading_time_seconds: number
           p_variant_index: number
           p_variant_label: string
@@ -1321,6 +1350,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      submit_feedback: {
+        Args: { p_payload: Json; p_token: string }
+        Returns: Json
       }
     }
     Enums: {
