@@ -28,7 +28,10 @@ const FormSchema = z
     what_could_improve: z.array(z.string().min(1).max(50)).max(6),
     free_text_comment: z.string().max(2000).nullable(),
   })
-  .refine((v) => (v.chosen_variant_id === null) !== v.needs_rework, {
+  // Exactly one of {chosen_variant_id set, needs_rework=true} must hold.
+  // Mirrors the migration 0011 CHECK + the feedback-submit Edge Function
+  // pre-flight. Expressed as "chosen-set XOR rework" via JS !==.
+  .refine((v) => (v.chosen_variant_id !== null) !== v.needs_rework, {
     message: 'xor_required',
     path: ['chosen_variant_id'],
   });
