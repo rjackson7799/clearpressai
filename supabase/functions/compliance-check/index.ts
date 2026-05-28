@@ -31,7 +31,6 @@ import {
   AuthError,
   createSupabaseFromRequest,
 } from '../_shared/auth.ts';
-import { recordAuditEvent } from '../_shared/audit-events.ts';
 
 const InputSchema = z.object({
   variant_ids: z.array(z.string().uuid()).min(1).max(3),
@@ -224,68 +223,45 @@ Deno.serve(async (req: Request) => {
           })),
         ];
 
-        // 4. Delete prior findings for this variant + insert merged set.
-        // Capturing the cleared-row count via .select('id') lets us tell a
-        // recheck from a first check for the T4 audit event below.
-        const { data: clearedRows, error: deleteError } = await supabase
-          .from('compliance_findings')
-          .delete()
-          .eq('variant_id', variantId)
-          .select('id');
-
-        if (deleteError) {
-          throw new Error(
-            `Delete prior findings failed for ${variantId}: ${deleteError.message}`,
-          );
-        }
-
-        const priorFindingsCount = clearedRows?.length ?? 0;
-
-        const rowsToInsert = merged.map((f) => ({
-          variant_id: variantId,
+        // Phase 7: I4 atomicity. record_compliance_check wraps the
+        // delete-prior + insert-new + audit-emit cycle in one tx.
+        // Event type (compliance_checked vs _rechecked) is derived
+        // server-side from the prior-findings count.
+        const findingsPayload = merged.map((f) => ({
           severity: f.severity,
           source_text: f.source_text,
           paragraph_index: f.paragraph_index,
           explanation: f.explanation,
           regulation_reference: f.regulation_reference,
           suggested_correction: f.suggested_correction,
-          resolution_status: 'unresolved' as const,
         }));
 
-        let insertedRows: ComplianceFinding[] = [];
-        if (rowsToInsert.length > 0) {
-          const { data: inserted, error: insertError } = await supabase
-            .from('compliance_findings')
-            .insert(rowsToInsert)
-            .select(
-              'severity, source_text, paragraph_index, explanation, regulation_reference, suggested_correction',
-            );
+        const auditDetails = {
+          deterministic_finding_count: deterministicFindings.length,
+          llm_finding_count: llmFindingsTagged.length,
+          total_finding_count: merged.length,
+        };
 
-          if (insertError) {
-            throw new Error(
-              `Insert findings failed for ${variantId}: ${insertError.message}`,
-            );
-          }
-          insertedRows = (inserted ?? []) as ComplianceFinding[];
+        const { data: rpcEnvelope, error: rpcError } = await supabase.rpc(
+          'record_compliance_check',
+          {
+            p_variant_id: variantId,
+            p_project_id: projectId,
+            p_findings: findingsPayload,
+            p_audit_details: auditDetails,
+            p_model_used: llmResponse.model,
+          },
+        );
+
+        if (rpcError) {
+          throw new Error(
+            `record_compliance_check failed for ${variantId}: ${rpcError.message}`,
+          );
         }
 
-        // T4: live audit event. compliance_rechecked when prior findings
-        // were cleared, compliance_checked when this is the first run.
-        // Counts come from the deterministic / LLM sources (pre-merge)
-        // so they stay accurate even when the merged set is empty.
-        await recordAuditEvent(supabase, {
-          projectId,
-          eventType:
-            priorFindingsCount > 0 ? 'compliance_rechecked' : 'compliance_checked',
-          modelUsed: llmResponse.model,
-          details: {
-            variant_id: variantId,
-            deterministic_finding_count: deterministicFindings.length,
-            llm_finding_count: llmFindingsTagged.length,
-            total_finding_count: merged.length,
-            prior_findings_cleared: priorFindingsCount,
-          },
-        });
+        const insertedRows = ((rpcEnvelope as {
+          inserted_findings: ComplianceFinding[];
+        } | null)?.inserted_findings ?? []) as ComplianceFinding[];
 
         return {
           variantId,

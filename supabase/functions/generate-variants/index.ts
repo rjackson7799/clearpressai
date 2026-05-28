@@ -36,7 +36,6 @@ import {
   createSupabaseFromRequest,
   getUserIdFromAuth,
 } from '../_shared/auth.ts';
-import { recordAuditEvent } from '../_shared/audit-events.ts';
 
 const InputSchema = z.object({
   content_item_id: z.string().uuid(),
@@ -286,6 +285,21 @@ Deno.serve(async (req: Request) => {
         anthropic_output_tokens: response.usage.output_tokens,
       };
 
+      // Phase 7: I4 atomicity. regenerate_variant now emits the
+      // variant_generated audit event inside the same tx as the variant
+      // upsert. The Edge Function passes audit details + actor context
+      // as RPC params; no follow-up insert.
+      const auditDetails = {
+        content_item_id: content_item_id,
+        variant_index: index,
+        is_regeneration: isRegeneration,
+        brief_hash: briefHash,
+        sub_type_classified,
+        length_norm_fallback: lengthNormFallback,
+        anthropic_input_tokens: response.usage.input_tokens,
+        anthropic_output_tokens: response.usage.output_tokens,
+      };
+
       const { data: variant, error: rpcError } = await supabase.rpc(
         'regenerate_variant',
         {
@@ -297,33 +311,16 @@ Deno.serve(async (req: Request) => {
           p_reading_time_seconds: readingTimeSeconds,
           p_model_used: response.model,
           p_generation_params: generationParams,
+          p_project_id: project.id,
+          p_actor_id: userId,
+          p_actor_name_snapshot: actorNameSnapshot,
+          p_audit_details: auditDetails,
         },
       );
 
       if (rpcError) {
         throw new Error(`variant ${index} RPC failed: ${rpcError.message}`);
       }
-
-      // T4: live audit event. See _shared/audit-events.ts header for the
-      // atomicity caveat (RPC commits before this insert).
-      await recordAuditEvent(supabase, {
-        projectId: project.id,
-        eventType: 'variant_generated',
-        actorId: userId,
-        actorNameSnapshot,
-        modelUsed: response.model,
-        details: {
-          variant_id: (variant as { id: string }).id,
-          content_item_id: content_item_id,
-          variant_index: index,
-          is_regeneration: isRegeneration,
-          brief_hash: briefHash,
-          sub_type_classified,
-          length_norm_fallback: lengthNormFallback,
-          anthropic_input_tokens: response.usage.input_tokens,
-          anthropic_output_tokens: response.usage.output_tokens,
-        },
-      });
 
       return variant;
     });
