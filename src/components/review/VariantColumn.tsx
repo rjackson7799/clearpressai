@@ -56,18 +56,22 @@ export function VariantColumn({
 
   return (
     <div className="rounded-md border bg-card flex flex-col">
-      <div className="flex items-center justify-between px-4 py-3 border-b">
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary">案{variant.variant_index}</Badge>
-          <span className="text-sm font-medium">{variant.variant_label}</span>
+      <div className="flex flex-col gap-2 px-4 py-3 border-b">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="secondary" className="shrink-0">
+            案{variant.variant_index}
+          </Badge>
+          <span className="text-sm font-medium whitespace-nowrap">
+            {variant.variant_label}
+          </span>
           {variant.internal_approved && (
-            <Badge variant="default" className="gap-1">
+            <Badge variant="default" className="gap-1 shrink-0">
               <CheckIcon className="size-3" />
               <BilingualLabel ja="承認済" en="Approved" />
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-2">
           <Button
             type="button"
             variant={variant.internal_approved ? 'outline' : 'default'}

@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BilingualLabel } from "@/components/shared/BilingualLabel";
+import { AuthShell } from "@/components/shared/AuthShell";
 
 export default function ResetPasswordPage() {
   const { t } = useTranslation();
@@ -20,23 +22,35 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen grid place-items-center p-8">
-      <form onSubmit={submit} className="w-full max-w-sm space-y-4">
-        <h1 className="text-2xl">{t("auth.reset_password")}</h1>
+    <AuthShell
+      title={<BilingualLabel ja="新しいパスワード" en="New password" />}
+      subtitle={
+        <BilingualLabel
+          ja="12文字以上のパスワードを設定してください"
+          en="Set a new password (12 characters or more)"
+        />
+      }
+    >
+      <form onSubmit={submit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="password">{t("auth.password")}</Label>
+          <Label htmlFor="password">
+            <BilingualLabel ja="パスワード" en="Password" />
+          </Label>
           <Input
             id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            autoComplete="new-password"
             minLength={12}
             required
           />
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
-        <Button type="submit">{t("common.save")}</Button>
+        <Button type="submit" className="w-full">
+          {t("common.save")}
+        </Button>
       </form>
-    </div>
+    </AuthShell>
   );
 }

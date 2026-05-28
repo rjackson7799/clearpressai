@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BilingualLabel } from "@/components/shared/BilingualLabel";
+import { AuthShell } from "@/components/shared/AuthShell";
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -38,11 +39,24 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen grid place-items-center p-8">
-      <form onSubmit={signInWithPassword} className="w-full max-w-sm space-y-4">
-        <h1 className="text-2xl">
-          <BilingualLabel ja="ログイン" en="Log in" />
-        </h1>
+    <AuthShell
+      title={<BilingualLabel ja="ログイン" en="Log in" />}
+      subtitle={
+        <BilingualLabel
+          ja="メールアドレスとパスワードでサインイン"
+          en="Sign in with your email and password"
+        />
+      }
+      footer={
+        <Link
+          to="/forgot-password"
+          className="text-muted-foreground hover:text-foreground underline underline-offset-4"
+        >
+          {t("auth.forgot_password")}
+        </Link>
+      }
+    >
+      <form onSubmit={signInWithPassword} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">
             <BilingualLabel ja="メールアドレス" en="Email" />
@@ -52,6 +66,7 @@ export default function LoginPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
             required
           />
         </div>
@@ -64,12 +79,17 @@ export default function LoginPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
             minLength={12}
           />
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
-        <div className="flex gap-2">
-          <Button type="submit" disabled={pending || !email || !password}>
+        <div className="flex flex-col gap-2 pt-1">
+          <Button
+            type="submit"
+            disabled={pending || !email || !password}
+            className="w-full"
+          >
             {t("auth.login")}
           </Button>
           <Button
@@ -77,14 +97,12 @@ export default function LoginPage() {
             variant="outline"
             disabled={pending || !email}
             onClick={sendMagicLink}
+            className="w-full"
           >
             {t("auth.magic_link")}
           </Button>
         </div>
-        <Link to="/forgot-password" className="text-sm underline">
-          {t("auth.forgot_password")}
-        </Link>
       </form>
-    </div>
+    </AuthShell>
   );
 }
