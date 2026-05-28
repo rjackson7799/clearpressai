@@ -335,7 +335,7 @@ async function terminal(
       p_delivery_id: deliveryId,
       p_error_message: errMsg,
     });
-  } catch (_) {
+  } catch {
     // Already returned to caller; log only.
     console.error(
       `mark_delivery_failed(${deliveryId}) failed for: ${errMsg}`,

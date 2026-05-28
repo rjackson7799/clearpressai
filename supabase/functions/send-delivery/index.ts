@@ -169,7 +169,7 @@ Deno.serve(async (req: Request) => {
   const results = await Promise.allSettled(attachmentPlan.tasks);
   const fails: string[] = [];
   const attachments: Attachment[] = [];
-  results.forEach((r, i) => {
+  results.forEach((r) => {
     if (r.status === 'fulfilled') attachments.push(r.value);
     else {
       const reason = r.reason instanceof AttachmentError
@@ -324,7 +324,7 @@ async function markFailed(
       p_delivery_id: deliveryId,
       p_error_message: errorMessage,
     });
-  } catch (_) {
+  } catch {
     // Logged via the surrounding response.
   }
 }

@@ -41,6 +41,7 @@ import { createClient } from '@supabase/supabase-js';
 import { handlePreflight } from '../_shared/cors.ts';
 import { jsonError, jsonResponse } from '../_shared/errors.ts';
 import { isValidTokenFormat } from '../_shared/magic-link.ts';
+import { sanitizeHtml } from '../_shared/sanitize.ts';
 import type { DeliverySnapshot } from '../_shared/types-delivery.ts';
 import type { FeedbackLoadResponse } from '../_shared/types-feedback.ts';
 
@@ -170,7 +171,11 @@ Deno.serve(async (req: Request) => {
       id: v.id,
       variant_label: v.variant_label,
       variant_index: v.variant_index,
-      body_html: v.body_html,
+      // body_html is LLM output (controlled-origin via the firm's variant-
+      // generation pipeline) but still untrusted shape — sanitize before
+      // it reaches the anonymous public page. Allowlist matches Tiptap's
+      // basic-block tag set per _shared/sanitize.ts.
+      body_html: v.body_html ? sanitizeHtml(v.body_html) : null,
       body_text: v.body_text,
       variation_directive: v.variation_directive,
       char_count: v.char_count,

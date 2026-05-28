@@ -53,6 +53,40 @@ describe('sanitizeHtml allowlist', () => {
     expect(out).not.toContain('<img');
     expect(out).not.toContain('<iframe');
   });
+
+  it('round-trips a realistic Tiptap variant body unchanged (Phase 7 feedback-page guard)', () => {
+    // Representative shape of what variant-generation produces today —
+    // confirms the sanitize pass in feedback-load doesn't strip legitimate
+    // content. Anchors with https: hrefs survive; basic block tags survive.
+    const input =
+      '<h2>新製品リリース</h2>' +
+      '<p><strong>2026年5月19日</strong> — 株式会社例の新製品について発表しました。</p>' +
+      '<ul><li>臨床試験結果が <em>良好</em> でした。</li><li>承認は順調に進んでいます。</li></ul>' +
+      '<p>詳細は <a href="https://example.com/news/1">プレスリリース</a> をご覧ください。</p>';
+    expect(sanitizeHtml(input)).toBe(input);
+  });
+
+  it('neutralizes an LLM-jailbreak-style XSS payload (Phase 7 feedback-page guard)', () => {
+    // If a variant-generation regression (or prompt-injection in the brief)
+    // ever produced HTML with active content, the public feedback page
+    // must not execute it. This test pins the defence: every attack vector
+    // is stripped while the surrounding legitimate text survives.
+    const input =
+      '<p>Hello</p>' +
+      '<img src="x" onerror="alert(1)">' +
+      '<a href="javascript:fetch(\'/steal\')">click</a>' +
+      '<style>body{background:red}</style>' +
+      '<svg><script>alert(2)</script></svg>';
+    const out = sanitizeHtml(input);
+    expect(out).toContain('<p>Hello</p>');
+    expect(out).not.toContain('<img');
+    expect(out).not.toContain('onerror');
+    expect(out).not.toContain('javascript:');
+    expect(out).not.toContain('<style');
+    expect(out).not.toContain('<svg');
+    expect(out).not.toContain('<script');
+    expect(out).not.toContain('alert');
+  });
 });
 
 describe('sanitizeSubject', () => {
