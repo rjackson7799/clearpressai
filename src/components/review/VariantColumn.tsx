@@ -71,13 +71,14 @@ export function VariantColumn({
             </Badge>
           )}
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex flex-col gap-2">
           <Button
             type="button"
             variant={variant.internal_approved ? 'outline' : 'default'}
             size="sm"
             disabled={approving || dirty || locked}
             onClick={() => onApproveToggle(!variant.internal_approved)}
+            className="w-full"
           >
             {variant.internal_approved ? (
               <BilingualLabel ja="承認を取り消す" en="Unapprove" />
@@ -91,6 +92,7 @@ export function VariantColumn({
             size="sm"
             disabled={regenerating || dirty || locked}
             onClick={() => setConfirmOpen(true)}
+            className="w-full"
           >
             <RefreshCwIcon className="size-3" />
             <BilingualLabel ja="再生成" en="Regenerate" />
