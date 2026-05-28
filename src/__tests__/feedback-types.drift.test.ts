@@ -175,13 +175,24 @@ describe('FeedbackLoadResponseSchema (discriminated union)', () => {
     expect(() => FeedbackLoadResponseSchema.parse(noSender)).toThrow();
   });
 
-  it('accepts the already_submitted branch', () => {
+  it('accepts the already_submitted branch with sender + project', () => {
+    expect(() =>
+      FeedbackLoadResponseSchema.parse({
+        status: 'already_submitted',
+        submitted_at: '2026-05-14T10:00:00.000Z',
+        sender: { from_name: 'PR会社X' },
+        project: { name: 'Q1 リリース' },
+      }),
+    ).not.toThrow();
+  });
+
+  it('rejects the already_submitted branch without sender or project', () => {
     expect(() =>
       FeedbackLoadResponseSchema.parse({
         status: 'already_submitted',
         submitted_at: '2026-05-14T10:00:00.000Z',
       }),
-    ).not.toThrow();
+    ).toThrow();
   });
 
   it('accepts the invalid branch', () => {

@@ -30,3 +30,27 @@ export function sanitizeSubject(input: string): string {
     .trim()
     .slice(0, 200);
 }
+
+// Phase 7 fallback: when a snapshot variant has body_text but no body_html
+// (Phase 5 composer only wrote body_html on Tiptap edit; fixtures or
+// pre-edit variants land here null), render body_text into safe HTML so
+// the public feedback page has something to display.
+const HTML_ESCAPE_MAP: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+function escapeHtmlText(text: string): string {
+  return text.replace(/[&<>"']/g, (c) => HTML_ESCAPE_MAP[c]);
+}
+export function plainTextToHtml(text: string): string {
+  if (!text) return '';
+  return text
+    .split(/\r?\n\r?\n/)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0)
+    .map((p) => `<p>${escapeHtmlText(p).replace(/\r?\n/g, '<br>')}</p>`)
+    .join('');
+}

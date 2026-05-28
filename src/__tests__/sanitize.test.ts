@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   sanitizeHtml,
   sanitizeSubject,
+  plainTextToHtml,
 } from '../../supabase/functions/_shared/sanitize';
 
 describe('sanitizeHtml allowlist', () => {
@@ -106,5 +107,45 @@ describe('sanitizeSubject', () => {
   it('caps at 200 chars', () => {
     const long = 'x'.repeat(300);
     expect(sanitizeSubject(long).length).toBe(200);
+  });
+});
+
+describe('plainTextToHtml (Phase 7 feedback-load body_html fallback)', () => {
+  it('wraps a single-paragraph plain text in <p>', () => {
+    expect(plainTextToHtml('Hello world')).toBe('<p>Hello world</p>');
+  });
+
+  it('splits paragraphs on blank lines', () => {
+    expect(plainTextToHtml('Para 1\n\nPara 2')).toBe(
+      '<p>Para 1</p><p>Para 2</p>',
+    );
+  });
+
+  it('renders single newlines inside a paragraph as <br>', () => {
+    expect(plainTextToHtml('Line 1\nLine 2')).toBe('<p>Line 1<br>Line 2</p>');
+  });
+
+  it('html-escapes angle brackets and ampersands', () => {
+    expect(plainTextToHtml('a < b & c > d')).toBe(
+      '<p>a &lt; b &amp; c &gt; d</p>',
+    );
+  });
+
+  it('html-escapes a script tag literal', () => {
+    expect(plainTextToHtml('<script>alert(1)</script>')).toBe(
+      '<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>',
+    );
+  });
+
+  it('returns empty string for empty input', () => {
+    expect(plainTextToHtml('')).toBe('');
+  });
+
+  it('drops paragraphs that are pure whitespace', () => {
+    expect(plainTextToHtml('a\n\n   \n\nb')).toBe('<p>a</p><p>b</p>');
+  });
+
+  it('handles CRLF line endings', () => {
+    expect(plainTextToHtml('a\r\n\r\nb')).toBe('<p>a</p><p>b</p>');
   });
 });

@@ -41,7 +41,7 @@ import { createClient } from '@supabase/supabase-js';
 import { handlePreflight } from '../_shared/cors.ts';
 import { jsonError, jsonResponse } from '../_shared/errors.ts';
 import { isValidTokenFormat } from '../_shared/magic-link.ts';
-import { sanitizeHtml } from '../_shared/sanitize.ts';
+import { sanitizeHtml, plainTextToHtml } from '../_shared/sanitize.ts';
 import type { DeliverySnapshot } from '../_shared/types-delivery.ts';
 import type { FeedbackLoadResponse } from '../_shared/types-feedback.ts';
 
@@ -124,9 +124,27 @@ Deno.serve(async (req: Request) => {
 
   if (status === 'already_submitted') {
     const submittedAt = (rpcData as { submitted_at: string }).submitted_at;
+
+    // Phase 7 fix: carry firm name + project name so the confirmation card
+    // says "Thank you for your feedback — <firm>" instead of leaving the
+    // slot empty. Mirrors the ok-branch follow-up SELECT pattern.
+    const { data: snapRow, error: snapErr } = await supabase
+      .from('feedback_tokens')
+      .select('delivery:deliveries!inner(delivery_snapshot)')
+      .eq('token', token)
+      .maybeSingle();
+    if (snapErr || !snapRow) {
+      return invalidResponse('delivery_lookup_failed', token);
+    }
+    const snap = (snapRow as unknown as {
+      delivery: { delivery_snapshot: DeliverySnapshot };
+    }).delivery.delivery_snapshot;
+
     const body: FeedbackLoadResponse = {
       status: 'already_submitted',
       submitted_at: submittedAt,
+      sender: { from_name: snap.sender.from_name },
+      project: { name: snap.project.name },
     };
     return jsonResponse(200, { data: body, error: null });
   }
@@ -174,8 +192,12 @@ Deno.serve(async (req: Request) => {
       // body_html is LLM output (controlled-origin via the firm's variant-
       // generation pipeline) but still untrusted shape — sanitize before
       // it reaches the anonymous public page. Allowlist matches Tiptap's
-      // basic-block tag set per _shared/sanitize.ts.
-      body_html: v.body_html ? sanitizeHtml(v.body_html) : null,
+      // basic-block tag set per _shared/sanitize.ts. When body_html is
+      // null (Phase 5 composer only writes it on Tiptap edit) fall back
+      // to wrapping body_text in escaped <p> tags so the page renders.
+      body_html: v.body_html
+        ? sanitizeHtml(v.body_html)
+        : plainTextToHtml(v.body_text),
       body_text: v.body_text,
       variation_directive: v.variation_directive,
       char_count: v.char_count,

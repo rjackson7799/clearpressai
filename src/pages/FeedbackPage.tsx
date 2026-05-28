@@ -35,11 +35,15 @@ export default function FeedbackPage() {
   const [justSubmittedAt, setJustSubmittedAt] = useState<string | null>(null);
 
   const headerName =
-    loadQ.data && loadQ.data.status === 'ok'
+    loadQ.data &&
+    (loadQ.data.status === 'ok' || loadQ.data.status === 'already_submitted')
       ? loadQ.data.sender.from_name
       : null;
   const projectName =
-    loadQ.data && loadQ.data.status === 'ok' ? loadQ.data.project.name : null;
+    loadQ.data &&
+    (loadQ.data.status === 'ok' || loadQ.data.status === 'already_submitted')
+      ? loadQ.data.project.name
+      : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -69,7 +73,7 @@ export default function FeedbackPage() {
         {loadQ.data?.status === 'already_submitted' && (
           <FeedbackConfirmation
             submittedAt={loadQ.data.submitted_at}
-            fromName={headerName ?? ''}
+            fromName={loadQ.data.sender.from_name}
           />
         )}
 

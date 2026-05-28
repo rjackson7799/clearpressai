@@ -53,6 +53,8 @@ export const FeedbackLoadOkSchema = z.object({
 export const FeedbackLoadAlreadySubmittedSchema = z.object({
   status: z.literal('already_submitted'),
   submitted_at: z.string(),
+  sender: z.object({ from_name: z.string() }),
+  project: z.object({ name: z.string() }),
 });
 
 export const FeedbackLoadInvalidSchema = z.object({

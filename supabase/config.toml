@@ -228,15 +228,20 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
-# Use a production-ready SMTP server
-# [auth.email.smtp]
-# enabled = true
-# host = "smtp.sendgrid.net"
-# port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# All auth email (magic-link, password reset, signup confirmation) ships through
+# Resend SMTP. Same RESEND_API_KEY that powers the Phase 5 delivery pipeline
+# (Edge Function `_shared/resend.ts`) is reused here as the SMTP password —
+# Resend SMTP convention is user = "resend", pass = <api_key>.
+# Cloud Auth SMTP is configured in the Supabase dashboard (Project Settings →
+# Auth → SMTP Settings); this block governs the local `supabase start` stack.
+[auth.email.smtp]
+enabled = true
+host = "smtp.resend.com"
+port = 465
+user = "resend"
+pass = "env(RESEND_API_KEY)"
+admin_email = "noreply@clearpressai.com"
+sender_name = "ClearPress AI"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]

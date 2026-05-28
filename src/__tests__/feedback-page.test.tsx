@@ -128,12 +128,14 @@ describe('FeedbackPage render states', () => {
     expect(screen.getByText('このリンクは無効です')).toBeInTheDocument();
   });
 
-  it('renders the already-submitted confirmation with the submitted_at', () => {
+  it('renders the already-submitted confirmation with submitted_at + firm name', () => {
     mockUseFeedbackLoad.mockReturnValue(
       loadResult({
         data: {
           status: 'already_submitted',
           submitted_at: '2026-05-14T10:30:00.000Z',
+          sender: { from_name: 'PR会社X' },
+          project: { name: 'Q1 プレスリリース' },
         },
       }),
     );
@@ -141,6 +143,10 @@ describe('FeedbackPage render states', () => {
     expect(
       screen.getByText('フィードバックを受け付けました'),
     ).toBeInTheDocument();
+    // Firm name appears in the page header AND in the thank-you copy
+    // ("Thank you for your feedback — PR会社X."). Phase 7 polish: prior
+    // shipping passed an empty fromName so this slot rendered blank.
+    expect(screen.getAllByText(/PR会社X/).length).toBeGreaterThan(0);
   });
 
   it('renders the active form + firm-branded header when status is ok', () => {
