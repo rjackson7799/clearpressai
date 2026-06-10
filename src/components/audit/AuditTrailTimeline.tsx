@@ -39,9 +39,6 @@ export function AuditTrailTimeline({ events }: AuditTrailTimelineProps) {
             <span className="absolute -left-[1.4rem] top-1.5 size-2 rounded-full bg-foreground/60" />
             <div className="flex items-baseline gap-2 flex-wrap">
               <span className="font-medium">{isJa ? label.ja : label.en}</span>
-              <span className="text-xs text-muted-foreground">
-                {isJa ? label.en : label.ja}
-              </span>
               {backfilled && (
                 <Badge variant="outline" className="text-xs font-normal">
                   <BilingualLabel ja="遡及記録" en="Backfilled" />

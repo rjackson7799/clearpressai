@@ -17,17 +17,17 @@ vi.mock("@/lib/supabase", () => ({
 import SettingsPage from "./SettingsPage";
 
 describe("SettingsPage", () => {
-  it("renders bilingual title with both ja and en visible", async () => {
+  it("renders only the Japanese title when language is ja", async () => {
     await i18n.changeLanguage("ja");
     render(<SettingsPage />);
     expect(screen.getByText("設定")).toBeInTheDocument();
-    expect(screen.getByText("Settings")).toBeInTheDocument();
+    expect(screen.queryByText("Settings")).not.toBeInTheDocument();
   });
 
-  it("still shows both after switching to en", async () => {
+  it("renders only the English title when language is en", async () => {
     await i18n.changeLanguage("en");
     render(<SettingsPage />);
     expect(screen.getByText("Settings")).toBeInTheDocument();
-    expect(screen.getByText("設定")).toBeInTheDocument();
+    expect(screen.queryByText("設定")).not.toBeInTheDocument();
   });
 });

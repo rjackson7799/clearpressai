@@ -5,23 +5,17 @@ import "@/locales/i18n";
 import { BilingualLabel } from "./BilingualLabel";
 
 describe("BilingualLabel", () => {
-  it("renders both languages when language is ja (ja primary)", async () => {
+  it("renders only Japanese when language is ja", async () => {
     await i18n.changeLanguage("ja");
     render(<BilingualLabel ja="サンプル素材" en="Sample Materials" />);
-    const primary = screen.getByText("サンプル素材");
-    const secondary = screen.getByText("Sample Materials");
-    expect(primary).toBeInTheDocument();
-    expect(secondary).toBeInTheDocument();
-    expect(secondary.className).toMatch(/opacity-60/);
+    expect(screen.getByText("サンプル素材")).toBeInTheDocument();
+    expect(screen.queryByText("Sample Materials")).not.toBeInTheDocument();
   });
 
-  it("renders both languages when language is en (en primary)", async () => {
+  it("renders only English when language is en", async () => {
     await i18n.changeLanguage("en");
     render(<BilingualLabel ja="サンプル素材" en="Sample Materials" />);
-    const primary = screen.getByText("Sample Materials");
-    const secondary = screen.getByText("サンプル素材");
-    expect(primary).toBeInTheDocument();
-    expect(secondary).toBeInTheDocument();
-    expect(secondary.className).toMatch(/opacity-60/);
+    expect(screen.getByText("Sample Materials")).toBeInTheDocument();
+    expect(screen.queryByText("サンプル素材")).not.toBeInTheDocument();
   });
 });
