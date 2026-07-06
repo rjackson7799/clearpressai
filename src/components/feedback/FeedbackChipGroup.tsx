@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PlusIcon, XIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,10 +29,16 @@ export function FeedbackChipGroup({
   disabled = false,
   ariaLabelledBy,
 }: Props) {
+  const { t, i18n } = useTranslation();
   const [draft, setDraft] = useState('');
 
   const isFull = value.length >= max;
   const presetActive = (preset: ChipPreset) => value.includes(preset.ja);
+  // Display the active-language label, but the PERSISTED value is always
+  // preset.ja — that's what the guideline-delta LLM reads and what the firm
+  // UI renders (chip presets stay JA-keyed per the LLM contract).
+  const presetLabel = (preset: ChipPreset) =>
+    i18n.language.startsWith('ja') ? preset.ja : preset.en;
 
   function togglePreset(preset: ChipPreset) {
     if (disabled) return;
@@ -81,8 +88,7 @@ export function FeedbackChipGroup({
               }
             }}
           >
-            <span>{p.ja}</span>
-            <span className="ml-1.5 text-xs opacity-70">{p.en}</span>
+            <span>{presetLabel(p)}</span>
           </Badge>
         ))}
       </div>
@@ -114,7 +120,7 @@ export function FeedbackChipGroup({
           onChange={(e) => setDraft(e.target.value)}
           maxLength={maxLength}
           disabled={disabled || isFull}
-          placeholder="他のキーワードを追加 / Add custom"
+          placeholder={t('feedback.chip.addPlaceholder')}
           className="text-sm"
           onKeyDown={(e) => {
             if (e.key === 'Enter') {

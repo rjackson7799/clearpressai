@@ -160,6 +160,39 @@
     "toasts": {
       "submitted": "フィードバックを送信しました",
       "failed": "送信に失敗しました"
+    },
+    "headerFallback": "フィードバック",
+    "invalid": {
+      "title": "このリンクは無効です",
+      "body": "リンクの有効期限が切れているか、すでに使用された可能性があります。"
+    },
+    "intro": {
+      "title": "{{project}} のドラフトについて",
+      "body": "以下の案の中からお好みのバージョンをお選びください。コメントは任意です。"
+    },
+    "form": {
+      "reworkTitle": "どの案も再検討が必要です",
+      "reworkHint": "いずれの案もご要望に合わない場合はこちらを選択してください",
+      "whatWorked": "良かった点",
+      "whatImprove": "改善できる点",
+      "additionalComments": "その他コメント（任意）",
+      "commentPlaceholder": "ご意見・ご要望を自由にご記入ください",
+      "submit": "送信する"
+    },
+    "variant": {
+      "tab": "案{{n}}",
+      "recommended": "推奨",
+      "meta": "{{chars}}字 · 約{{minutes}}分",
+      "selected": "この版を選択しました",
+      "choose": "このバージョンを選択"
+    },
+    "chip": {
+      "addPlaceholder": "他のキーワードを追加"
+    },
+    "confirmation": {
+      "title": "フィードバックを受け付けました",
+      "submittedAt": "{{date}} に送信済み",
+      "thanks": "ご協力ありがとうございました。{{firm}} よりお礼申し上げます。"
     }
   },
   "guidelines": {

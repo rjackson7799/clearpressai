@@ -51,7 +51,7 @@ export default function FeedbackPage() {
         <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="min-w-0">
             <div className="truncate text-sm font-medium">
-              {headerName ?? 'フィードバック / Feedback'}
+              {headerName ?? t('feedback.headerFallback')}
             </div>
             {projectName && (
               <div className="truncate text-xs text-muted-foreground">
@@ -129,6 +129,7 @@ function LoadingState() {
 }
 
 function InvalidState() {
+  const { t } = useTranslation();
   return (
     <Card>
       <CardContent className="py-12">
@@ -136,18 +137,11 @@ function InvalidState() {
           <div className="rounded-full bg-muted p-3">
             <LinkIcon className="size-6 text-muted-foreground" aria-hidden />
           </div>
-          <div>
-            <div className="text-base font-medium">
-              このリンクは無効です
-            </div>
-            <div className="mt-0.5 text-sm text-muted-foreground">
-              Link no longer valid
-            </div>
+          <div className="text-base font-medium">
+            {t('feedback.invalid.title')}
           </div>
           <p className="max-w-sm text-sm text-muted-foreground">
-            リンクの有効期限が切れているか、すでに使用された可能性があります。
-            <br />
-            The link may have expired or already been used.
+            {t('feedback.invalid.body')}
           </p>
         </div>
       </CardContent>
@@ -156,17 +150,15 @@ function InvalidState() {
 }
 
 function Intro({ projectName }: { projectName: string }) {
+  const { t } = useTranslation();
   return (
     <Card>
       <CardContent className="space-y-2 py-5">
         <div className="text-base font-medium">
-          {projectName} のドラフトについて
+          {t('feedback.intro.title', { project: projectName })}
         </div>
         <p className="text-sm text-muted-foreground">
-          3案の中からお好みのバージョンをお選びください。コメントは任意です。
-          <br />
-          Please review the three versions below and choose the one that
-          works best. Comments are optional.
+          {t('feedback.intro.body')}
         </p>
       </CardContent>
     </Card>

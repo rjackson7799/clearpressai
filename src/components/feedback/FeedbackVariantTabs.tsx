@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { CheckIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ export function FeedbackVariantTabs({
   onChoose,
   dimmed,
 }: Props) {
+  const { t } = useTranslation();
   const sorted = [...variants].sort((a, b) => a.variant_index - b.variant_index);
   const defaultTab = String(sorted[0]?.variant_index ?? 1);
 
@@ -44,10 +46,10 @@ export function FeedbackVariantTabs({
               value={String(v.variant_index)}
               className="flex-1"
             >
-              <span>案{v.variant_index}</span>
+              <span>{t('feedback.variant.tab', { n: v.variant_index })}</span>
               {v.id === recommendedVariantId && (
                 <Badge variant="secondary" className="ml-2 text-xs">
-                  推奨
+                  {t('feedback.variant.recommended')}
                 </Badge>
               )}
               {v.id === chosenVariantId && (
@@ -70,7 +72,10 @@ export function FeedbackVariantTabs({
                   )}
                 </div>
                 <div className="shrink-0 text-xs text-muted-foreground">
-                  {v.char_count}字 · 約{Math.ceil(readingTimeSeconds(v.char_count) / 60)}分
+                  {t('feedback.variant.meta', {
+                    chars: v.char_count,
+                    minutes: Math.ceil(readingTimeSeconds(v.char_count) / 60),
+                  })}
                 </div>
               </div>
 
@@ -92,10 +97,10 @@ export function FeedbackVariantTabs({
                   {v.id === chosenVariantId ? (
                     <>
                       <CheckIcon className="mr-2 size-4" />
-                      <span>この版を選択しました / Selected</span>
+                      <span>{t('feedback.variant.selected')}</span>
                     </>
                   ) : (
-                    <span>このバージョンを選択 / Choose this version</span>
+                    <span>{t('feedback.variant.choose')}</span>
                   )}
                 </Button>
               </div>

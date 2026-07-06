@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm, useWatch, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -46,6 +47,7 @@ interface Props {
 }
 
 export function FeedbackForm({ loaded, onSubmit, isPending, errorMessage }: Props) {
+  const { t } = useTranslation();
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema) as never,
     defaultValues: {
@@ -116,9 +118,9 @@ export function FeedbackForm({ loaded, onSubmit, isPending, errorMessage }: Prop
               className="mt-1"
             />
             <label htmlFor="needs-rework" className="cursor-pointer text-sm">
-              <div className="font-medium">どの案も再検討が必要</div>
+              <div className="font-medium">{t('feedback.form.reworkTitle')}</div>
               <div className="text-xs text-muted-foreground">
-                None of these versions work — please rework
+                {t('feedback.form.reworkHint')}
               </div>
             </label>
           </div>
@@ -130,7 +132,7 @@ export function FeedbackForm({ loaded, onSubmit, isPending, errorMessage }: Prop
           <CardContent className="space-y-6 py-6">
             <div className="space-y-2">
               <div id="what-worked-label" className="text-sm font-medium">
-                良かった点 <span className="text-muted-foreground">/ What worked</span>
+                {t('feedback.form.whatWorked')}
               </div>
               <Controller
                 control={form.control}
@@ -151,8 +153,7 @@ export function FeedbackForm({ loaded, onSubmit, isPending, errorMessage }: Prop
 
             <div className="space-y-2">
               <div id="what-improve-label" className="text-sm font-medium">
-                改善できる点{' '}
-                <span className="text-muted-foreground">/ What to improve</span>
+                {t('feedback.form.whatImprove')}
               </div>
               <Controller
                 control={form.control}
@@ -176,8 +177,7 @@ export function FeedbackForm({ loaded, onSubmit, isPending, errorMessage }: Prop
                 htmlFor="free-text-comment"
                 className="text-sm font-medium"
               >
-                その他コメント{' '}
-                <span className="text-muted-foreground">/ Additional comments (optional)</span>
+                {t('feedback.form.additionalComments')}
               </label>
               <Controller
                 control={form.control}
@@ -190,7 +190,7 @@ export function FeedbackForm({ loaded, onSubmit, isPending, errorMessage }: Prop
                     maxLength={2000}
                     rows={5}
                     disabled={isPending}
-                    placeholder="ご意見・ご要望を自由にご記入ください / Share any additional thoughts."
+                    placeholder={t('feedback.form.commentPlaceholder')}
                   />
                 )}
               />
@@ -218,7 +218,7 @@ export function FeedbackForm({ loaded, onSubmit, isPending, errorMessage }: Prop
         disabled={isPending || !showForm}
       >
         <SendIcon className="mr-2 size-4" />
-        <span>送信 / Submit feedback</span>
+        <span>{t('feedback.form.submit')}</span>
       </Button>
     </form>
   );

@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import '@/locales/i18n';
+import i18n from '@/locales/i18n';
 
 // Mock the supabase client BEFORE importing modules that use it. The mocks
 // for the two hook modules below ensure no actual network call happens; we
@@ -96,7 +96,10 @@ const OK_FIXTURE: FeedbackLoadResponse = {
   expires_at: '2026-06-13T10:00:00.000Z',
 };
 
-beforeEach(() => {
+beforeEach(async () => {
+  // Force JA so single-language assertions are deterministic regardless of
+  // the jsdom navigator locale.
+  await i18n.changeLanguage('ja');
   mockUseFeedbackLoad.mockReset();
   mockUseFeedbackSubmit.mockReset();
   mockUseFeedbackSubmit.mockReturnValue(submitResult({}));
@@ -117,7 +120,9 @@ describe('FeedbackPage render states', () => {
     );
     renderPage();
     expect(screen.getByText('このリンクは無効です')).toBeInTheDocument();
-    expect(screen.getByText('Link no longer valid')).toBeInTheDocument();
+    expect(
+      screen.getByText(/リンクの有効期限が切れているか/),
+    ).toBeInTheDocument();
   });
 
   it('renders the invalid state on query error', () => {
@@ -163,9 +168,7 @@ describe('FeedbackPage render states', () => {
   it('does not show the firm name in the header when the query is still loading', () => {
     mockUseFeedbackLoad.mockReturnValue(loadResult({ isLoading: true }));
     renderPage();
-    // Fallback header text.
-    expect(
-      screen.getByText(/フィードバック \/ Feedback/),
-    ).toBeInTheDocument();
+    // Fallback header text (single-language via LanguageToggle).
+    expect(screen.getByText('フィードバック')).toBeInTheDocument();
   });
 });

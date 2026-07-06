@@ -1,8 +1,15 @@
 import { useState } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
+import i18n from '@/locales/i18n';
 import { FeedbackChipGroup } from '@/components/feedback/FeedbackChipGroup';
 import type { ChipPreset } from '@/components/feedback/feedback-chip-presets';
+
+// Force JA so the preset badges render their JA labels (also the persisted
+// value) and the localized placeholder is deterministic.
+beforeEach(async () => {
+  await i18n.changeLanguage('ja');
+});
 
 const PRESETS: readonly ChipPreset[] = [
   { id: 'a', ja: 'A日本語', en: 'A English' },
@@ -50,7 +57,7 @@ describe('FeedbackChipGroup', () => {
 
   it('adds a custom chip via the Add button', () => {
     render(<Harness />);
-    const input = screen.getByPlaceholderText(/Add custom/);
+    const input = screen.getByPlaceholderText(/他のキーワードを追加/);
     fireEvent.change(input, { target: { value: 'custom-x' } });
     const buttons = screen.getAllByRole('button');
     const addButton = buttons.find(
@@ -62,7 +69,7 @@ describe('FeedbackChipGroup', () => {
 
   it('adds a custom chip on Enter', () => {
     render(<Harness />);
-    const input = screen.getByPlaceholderText(/Add custom/);
+    const input = screen.getByPlaceholderText(/他のキーワードを追加/);
     fireEvent.change(input, { target: { value: 'via-enter' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(screen.getByTestId('value')).toHaveTextContent('via-enter');
@@ -71,7 +78,7 @@ describe('FeedbackChipGroup', () => {
   it('respects the max bound and rejects additional adds', () => {
     render(<Harness max={2} initial={['A日本語', 'B日本語']} />);
     // The input is disabled when full
-    const input = screen.getByPlaceholderText(/Add custom/) as HTMLInputElement;
+    const input = screen.getByPlaceholderText(/他のキーワードを追加/) as HTMLInputElement;
     expect(input.disabled).toBe(true);
     // Preset C should not toggle on because the group is full
     fireEvent.click(getPresetBadge('C日本語'));

@@ -160,6 +160,39 @@
     "toasts": {
       "submitted": "Feedback submitted",
       "failed": "Failed to submit feedback"
+    },
+    "headerFallback": "Feedback",
+    "invalid": {
+      "title": "Link no longer valid",
+      "body": "The link may have expired or already been used."
+    },
+    "intro": {
+      "title": "About the draft for {{project}}",
+      "body": "Please review the versions below and choose the one that works best. Comments are optional."
+    },
+    "form": {
+      "reworkTitle": "None of these versions work",
+      "reworkHint": "Select this if none of the versions meet your needs and a rework is needed",
+      "whatWorked": "What worked",
+      "whatImprove": "What to improve",
+      "additionalComments": "Additional comments (optional)",
+      "commentPlaceholder": "Share any additional thoughts.",
+      "submit": "Submit feedback"
+    },
+    "variant": {
+      "tab": "Version {{n}}",
+      "recommended": "Recommended",
+      "meta": "{{chars}} chars · ~{{minutes}} min",
+      "selected": "Selected",
+      "choose": "Choose this version"
+    },
+    "chip": {
+      "addPlaceholder": "Add custom"
+    },
+    "confirmation": {
+      "title": "Feedback received",
+      "submittedAt": "Submitted {{date}}",
+      "thanks": "Thank you for your feedback — {{firm}}."
     }
   },
   "guidelines": {

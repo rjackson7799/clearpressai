@@ -59,9 +59,8 @@ describe("App routing", () => {
   it("renders feedback page at /f/:token with the firm-branded header", () => {
     renderWithProviders(["/f/abc123"]);
     // The query hangs in loading; the header fallback text is the stable
-    // assertion for the routing smoke. Page-level state tests live in T9.
-    expect(
-      screen.getByText(/フィードバック \/ Feedback/),
-    ).toBeInTheDocument();
+    // assertion for the routing smoke. Single-language via LanguageToggle, so
+    // match either localized fallback. Page-level state tests live in T9.
+    expect(screen.getByText(/フィードバック|Feedback/)).toBeInTheDocument();
   });
 });
