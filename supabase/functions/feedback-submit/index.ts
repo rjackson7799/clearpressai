@@ -40,6 +40,7 @@ import { createClient } from '@supabase/supabase-js';
 import { handlePreflight } from '../_shared/cors.ts';
 import { jsonError, jsonResponse } from '../_shared/errors.ts';
 import { isValidTokenFormat } from '../_shared/magic-link.ts';
+import { checkRateLimit, getClientIp } from '../_shared/rate-limit.ts';
 import { FeedbackSubmitInputSchema } from '../_shared/types-feedback.ts';
 import type { FeedbackSubmitResponse } from '../_shared/types-feedback.ts';
 import type { DeliverySnapshot } from '../_shared/types-delivery.ts';
@@ -137,6 +138,12 @@ Deno.serve(async (req: Request) => {
   }
 
   const supabase = createClient(url, serviceKey);
+
+  // Tighter per-IP throttle than feedback-load: each accepted submission fires
+  // an anonymous Anthropic call, so this is the cost/abuse boundary. Fails open.
+  if (!(await checkRateLimit(supabase, 'feedback-submit', getClientIp(req), 10, 300))) {
+    return jsonError(429, { code: 'validation_error', message: 'rate_limited' });
+  }
 
   const { data: rpcDataRaw, error: rpcErr } = await supabase.rpc(
     'submit_feedback',

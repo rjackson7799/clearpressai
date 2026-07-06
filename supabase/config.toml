@@ -385,6 +385,42 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# ----------------------------------------------------------------------------
+# Per-function JWT gate, declared so a redeploy can't silently flip it. The two
+# public feedback endpoints are anonymous by design (the URL token is the auth);
+# everything else requires a JWT. Keep this in sync with how each function is
+# deployed — `supabase functions deploy <name>` reads verify_jwt from here.
+# ----------------------------------------------------------------------------
+[functions.feedback-load]
+verify_jwt = false
+
+[functions.feedback-submit]
+verify_jwt = false
+
+[functions.compliance-check]
+verify_jwt = true
+
+[functions.extract-voice]
+verify_jwt = true
+
+[functions.generate-variants]
+verify_jwt = true
+
+[functions.send-delivery]
+verify_jwt = true
+
+[functions.sign-audit-report]
+verify_jwt = true
+
+[functions.verify-audit-signature]
+verify_jwt = true
+
+[functions.retrigger-feedback-delta]
+verify_jwt = true
+
+[functions.process-scheduled-sends]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327

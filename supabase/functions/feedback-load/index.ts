@@ -41,6 +41,7 @@ import { createClient } from '@supabase/supabase-js';
 import { handlePreflight } from '../_shared/cors.ts';
 import { jsonError, jsonResponse } from '../_shared/errors.ts';
 import { isValidTokenFormat } from '../_shared/magic-link.ts';
+import { checkRateLimit, getClientIp } from '../_shared/rate-limit.ts';
 import { sanitizeHtml, plainTextToHtml } from '../_shared/sanitize.ts';
 import type { DeliverySnapshot } from '../_shared/types-delivery.ts';
 import type { FeedbackLoadResponse } from '../_shared/types-feedback.ts';
@@ -104,6 +105,12 @@ Deno.serve(async (req: Request) => {
     });
   }
   const supabase = createClient(url, serviceKey);
+
+  // Coarse per-IP throttle (fails open). Generous — a legit reviewer loads the
+  // page a handful of times; this only bites scraping / token-probing volume.
+  if (!(await checkRateLimit(supabase, 'feedback-load', getClientIp(req), 100, 300))) {
+    return jsonError(429, { code: 'validation_error', message: 'rate_limited' });
+  }
 
   const { data: rpcData, error: rpcErr } = await supabase.rpc(
     'get_feedback_load_data',
