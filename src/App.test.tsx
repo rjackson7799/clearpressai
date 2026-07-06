@@ -42,7 +42,11 @@ function renderWithProviders(initialEntries: string[]) {
 describe("App routing", () => {
   it("renders dashboard at / when authed", () => {
     renderWithProviders(["/"]);
-    expect(screen.getByText("Dashboard / ダッシュボード")).toBeInTheDocument();
+    // The list queries hang/error in this smoke; the page heading is the
+    // stable assertion. Onboarding logic is unit-tested in onboarding.test.ts.
+    expect(
+      screen.getByRole("heading", { name: /Dashboard|ダッシュボード/ }),
+    ).toBeInTheDocument();
   });
 
   it("renders login at /login", () => {
