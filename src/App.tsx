@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { AppShell } from "@/components/shared/AppShell";
+import { AppErrorBoundary } from "@/components/shared/AppErrorBoundary";
 import { Toaster } from "@/components/ui/sonner";
 import LoginPage from "@/pages/LoginPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
@@ -18,6 +19,7 @@ import AuditReportPage from "@/pages/AuditReportPage";
 import DeliveriesListPage from "@/pages/DeliveriesListPage";
 import DeliveryComposerPage from "@/pages/DeliveryComposerPage";
 import PrintAuditReportPage from "@/pages/PrintAuditReportPage";
+import NotFoundPage from "@/pages/NotFoundPage";
 
 export default function App() {
   return (
@@ -26,7 +28,14 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/f/:token" element={<FeedbackPage />} />
+        <Route
+          path="/f/:token"
+          element={
+            <AppErrorBoundary variant="minimal">
+              <FeedbackPage />
+            </AppErrorBoundary>
+          }
+        />
         <Route element={<ProtectedRoute />}>
           {/* Print routes deliberately render outside AppShell so the
               sidebar/header don't appear in the PDF output. */}
@@ -48,6 +57,7 @@ export default function App() {
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <Toaster />
     </>

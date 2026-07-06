@@ -11,6 +11,17 @@
     "error": "Error",
     "retry": "Retry"
   },
+  "errors": {
+    "boundaryTitle": "Something went wrong",
+    "boundaryBody": "An unexpected error occurred. Please reload the page. If the problem persists, contact your administrator.",
+    "boundaryBodyMinimal": "An unexpected error occurred. Please reload the page and try again.",
+    "reload": "Reload"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The page you are looking for doesn't exist or may have moved.",
+    "home": "Back to home"
+  },
   "auth": {
     "login": "Log in",
     "email": "Email",

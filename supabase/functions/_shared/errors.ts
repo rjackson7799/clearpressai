@@ -21,5 +21,14 @@ export const jsonResponse = (status: number, body: unknown): Response => {
 };
 
 export const jsonError = (status: number, error: ApiError): Response => {
+  // Log server-side so failures leave a trace in Supabase Edge logs (the JSON
+  // body alone was not logged anywhere). 5xx is a real fault; 4xx is expected
+  // client error, logged at a lower level to keep the signal clean.
+  const line = `[${error.code}] ${status} ${error.message}`;
+  if (status >= 500) {
+    console.error(line, error.details ?? "");
+  } else {
+    console.warn(line);
+  }
   return jsonResponse(status, { data: null, error });
 };

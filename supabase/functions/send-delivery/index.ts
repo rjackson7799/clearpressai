@@ -230,7 +230,11 @@ Deno.serve(async (req: Request) => {
   });
   if (markError) {
     // Email sent but audit write failed. Surface as 500 with the message id
-    // so ops can reconcile manually.
+    // so ops can reconcile manually. Distinct marker for log search — the
+    // email/cost is already spent, so this must never be silently lost.
+    console.error(
+      `RECONCILE_NEEDED delivery=${created.delivery_id} resend_message_id=${messageId} mark_delivery_sent_user_error=${markError.message}`,
+    );
     return jsonError(500, {
       code: 'internal_error',
       message:
