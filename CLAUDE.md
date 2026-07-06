@@ -247,6 +247,16 @@ T12 is partially unblocked. `app_config` is now seeded; the Sender section of th
 - **`.env.example` documented** the four server-side Edge Function secrets (`RESEND_API_KEY` / `PDFSHIFT_API_KEY` / `PUBLIC_FEEDBACK_URL_BASE` / `ANTHROPIC_API_KEY`) with explicit guidance that they must be set via `npx supabase secrets set` or the dashboard — NEVER in `.env.local`, since Vite bundles `import.meta.env.*` and would leak secrets to every browser visitor.
 - **Still pending** for full T12 smoke: set `RESEND_API_KEY` + `PDFSHIFT_API_KEY` + `PUBLIC_FEEDBACK_URL_BASE` as Edge Function secrets; `vault.create_secret(...)` for `service_role_key`; apply a `cron.schedule(...)` op-SQL file for `process-scheduled-sends` (still not committed — would mirror the `op_` convention this wave established).
 
+### Phase 5 T12 live send smoke addendum (2026-05-28)
+
+Immediate delivery smoke is now passing on the live site. User validated `/projects/:id/deliver` against `https://www.clearpressai.com` and project `hsdqvlnzorjzxfaqijns`: Word-only send succeeded, then PDF-only send succeeded after PDFShift setup; the Deliveries list showed the new PDF row as `sent` and the browser console was clean.
+
+- **Cloud deployment fixed:** `send-delivery` was missing from the hosted Edge Function list, causing browser CORS/preflight failures because `/functions/v1/send-delivery` returned 404. Deployed `send-delivery`; live preflight then returned `200` with `Access-Control-Allow-Origin: *`.
+- **DB token hotfix applied:** first real send after deployment reached the RPC and failed with `create_delivery failed: function gen_random_bytes(integer) does not exist`. Root cause: `create_delivery` had `search_path=public`, while Supabase installs `gen_random_bytes(integer)` under `extensions`. Added `supabase/migrations/0012_phase7_create_delivery_pgcrypto_search_path.sql`, applied via `npx supabase db push --linked`, and verified `pg_proc.proconfig` now has `search_path=public, extensions`.
+- **PDFShift auth fixed:** Word-only sends proved Resend + DOCX generation were healthy, while PDF initially failed with `pdfshift 401`. `_shared/attachments.ts` now sends PDFShift credentials via `X-API-Key` (current PDFShift convention) and normalizes accidental whitespace / outer quotes in `PDFSHIFT_API_KEY`. User then set the real `PDFSHIFT_API_KEY` Edge Function secret and redeployed `send-delivery` through version 6; PDF-only send passed.
+- **Expected artifacts:** failed PDF/PDF+Word smoke attempts remain visible in delivery history as `failed` rows. These are operational smoke artifacts, not current blockers.
+- **Still pending for scheduled-send T12:** deploy/verify `process-scheduled-sends`, create Vault `service_role_key`, and apply the pg_cron `cron.schedule(...)` op-SQL. Immediate live Resend + PDFShift sends are no longer pending.
+
 ### Phase 7 carry-forward (out of first wave; still open)
 
 - **Day-7 reminder email + pg_cron job** (carry from Phase 6).
@@ -272,7 +282,7 @@ T12 is partially unblocked. `app_config` is now seeded; the Sender section of th
 - **Resend webhook for bounce/complaint** (carry from Phase 5).
 - **E2E tests** (TSD §16 Phase 7 named scope — Playwright or equivalent against the live cloud).
 - **Performance check** (TSD §16 Phase 7 named scope — Lighthouse, bundle size, query perf).
-- **Phase 5 T12 cloud smoke** (live Resend + pdfshift + pg_cron — still pending, user-driven).
+- **Phase 5 T12 scheduled-send smoke** (pg_cron + `process-scheduled-sends` path still pending; immediate live Resend + PDFShift sends passed 2026-05-28).
 
 ---
 

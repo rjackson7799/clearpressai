@@ -250,7 +250,10 @@ RESEND_FROM_NAME="Your Firm Name"
 
 # App
 VITE_APP_URL=http://localhost:5173
-VITE_FEEDBACK_BASE_URL=http://localhost:5173/f
+# App root only (no trailing "/f") — buildFeedbackUrl appends "/f/<token>".
+# Production sets PUBLIC_FEEDBACK_URL_BASE as an Edge Function secret with
+# the same convention (e.g. https://clearpressai.com).
+VITE_FEEDBACK_BASE_URL=http://localhost:5173
 ```
 
 Edge Function secrets are set via:

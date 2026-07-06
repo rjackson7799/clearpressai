@@ -42,6 +42,7 @@ import {
   generateDocx,
   generatePdf,
 } from '../_shared/attachments.ts';
+import { buildDocMeta, buildPdfHtml } from '../_shared/doc-rendering.ts';
 import { ResendError, sendEmail } from '../_shared/resend.ts';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -255,6 +256,7 @@ function planAttachments(
   const safeName = projectName || 'delivery';
   const variants = snapshot.variants;
   const html = buildPdfHtml(snapshot);
+  const meta = buildDocMeta(snapshot);
   const blocks = variants.map((v) => ({
     variant_label: v.variant_label,
     variant_index: v.variant_index,
@@ -266,37 +268,9 @@ function planAttachments(
     tasks.push(generatePdf(html, `${safeName}.pdf`));
   }
   if (format === 'word' || format === 'both') {
-    tasks.push(generateDocx(blocks, `${safeName}.docx`));
+    tasks.push(generateDocx(blocks, `${safeName}.docx`, meta));
   }
   return { tasks };
-}
-
-function buildPdfHtml(snapshot: DeliverySnapshot): string {
-  const sections = snapshot.variants
-    .slice()
-    .sort((a, b) => a.variant_index - b.variant_index)
-    .map((v) => {
-      const body = v.body_html ?? `<pre>${escapeHtml(v.body_text)}</pre>`;
-      return [
-        '<section>',
-        `<h2>Variant ${v.variant_index} — ${escapeHtml(v.variant_label)}</h2>`,
-        body,
-        '</section>',
-      ].join('\n');
-    })
-    .join('\n');
-  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>${
-    escapeHtml(snapshot.project.name)
-  }</title></head><body>${sections}</body></html>`;
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 function stripHtmlToText(html: string): string {

@@ -36,6 +36,7 @@ import {
   generateDocx,
   generatePdf,
 } from '../_shared/attachments.ts';
+import { buildDocMeta, buildPdfHtml } from '../_shared/doc-rendering.ts';
 import { applyFeedbackToBody } from '../_shared/delivery-template.ts';
 import { buildFeedbackUrl } from '../_shared/magic-link.ts';
 import type { DeliverySnapshot } from '../_shared/types-delivery.ts';
@@ -349,6 +350,7 @@ async function buildAttachments(
 ): Promise<Attachment[]> {
   const safeName = snapshot.project.name || 'delivery';
   const html = buildPdfHtml(snapshot);
+  const meta = buildDocMeta(snapshot);
   const blocks = snapshot.variants.map((v) => ({
     variant_label: v.variant_label,
     variant_index: v.variant_index,
@@ -359,39 +361,11 @@ async function buildAttachments(
     tasks.push(generatePdf(html, `${safeName}.pdf`));
   }
   if (format === 'word' || format === 'both') {
-    tasks.push(generateDocx(blocks, `${safeName}.docx`));
+    tasks.push(generateDocx(blocks, `${safeName}.docx`, meta));
   }
   // Partial-success rejection: throw on the first failure so caller branches
   // to transient/terminal. Promise.all throws on first reject.
   return await Promise.all(tasks);
-}
-
-function buildPdfHtml(snapshot: DeliverySnapshot): string {
-  const sections = snapshot.variants
-    .slice()
-    .sort((a, b) => a.variant_index - b.variant_index)
-    .map((v) => {
-      const body = v.body_html ?? `<pre>${escapeHtml(v.body_text)}</pre>`;
-      return [
-        '<section>',
-        `<h2>Variant ${v.variant_index} — ${escapeHtml(v.variant_label)}</h2>`,
-        body,
-        '</section>',
-      ].join('\n');
-    })
-    .join('\n');
-  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>${
-    escapeHtml(snapshot.project.name)
-  }</title></head><body>${sections}</body></html>`;
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 async function runWithConcurrency<T, U>(

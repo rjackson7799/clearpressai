@@ -18,7 +18,19 @@
  * if either rejects, the caller aborts the whole send (mark_delivery_failed).
  * No half-formatted deliveries.
  */
-import { Document, HeadingLevel, Packer, Paragraph, TextRun } from 'docx';
+import {
+  AlignmentType,
+  Document,
+  Footer,
+  Header,
+  HeadingLevel,
+  Packer,
+  Paragraph,
+  ShadingType,
+  TextRun,
+} from 'docx';
+import type { DocMeta } from './doc-rendering.ts';
+import { DRAFT_BANNER_TEXT, buildPdfFooterText } from './doc-rendering.ts';
 
 export type AttachmentWhich = 'pdf' | 'docx';
 
@@ -50,14 +62,14 @@ export async function generatePdf(
   html: string,
   filename: string,
 ): Promise<Attachment> {
-  const apiKey = Deno.env.get('PDFSHIFT_API_KEY');
+  const apiKey = normalizeSecret(Deno.env.get('PDFSHIFT_API_KEY'));
   if (!apiKey) {
     throw new AttachmentError('pdf', 'PDFSHIFT_API_KEY not set');
   }
   const res = await fetch('https://api.pdfshift.io/v3/convert/pdf', {
     method: 'POST',
     headers: {
-      'Authorization': `Basic ${btoa('api:' + apiKey)}`,
+      'X-API-Key': apiKey,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ source: html }),
@@ -90,6 +102,7 @@ export interface VariantBlock {
 export async function generateDocx(
   blocks: ReadonlyArray<VariantBlock>,
   filename: string,
+  meta: DocMeta,
 ): Promise<Attachment> {
   const sorted = blocks.slice().sort((a, b) => a.variant_index - b.variant_index);
   const children = sorted.flatMap((b) => [
@@ -101,7 +114,39 @@ export async function generateDocx(
       (p) => new Paragraph({ children: [new TextRun(p)] }),
     ),
   ]);
-  const doc = new Document({ sections: [{ children }] });
+  const headerParagraph = new Paragraph({
+    alignment: AlignmentType.CENTER,
+    shading: {
+      type: ShadingType.CLEAR,
+      color: 'auto',
+      fill: 'EA580C',
+    },
+    children: [
+      new TextRun({
+        text: DRAFT_BANNER_TEXT,
+        bold: true,
+        color: 'FFFFFF',
+        size: 22,
+      }),
+    ],
+  });
+  const footerParagraph = new Paragraph({
+    alignment: AlignmentType.CENTER,
+    children: [
+      new TextRun({
+        text: buildPdfFooterText(meta),
+        color: '6B7280',
+        size: 16,
+      }),
+    ],
+  });
+  const doc = new Document({
+    sections: [{
+      headers: { default: new Header({ children: [headerParagraph] }) },
+      footers: { default: new Footer({ children: [footerParagraph] }) },
+      children,
+    }],
+  });
   let buf: Uint8Array;
   try {
     const out = await Packer.toBuffer(doc);
@@ -141,4 +186,8 @@ function bufToBase64(buf: Uint8Array): string {
   let bin = '';
   for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
   return btoa(bin);
+}
+
+function normalizeSecret(value: string | undefined): string | undefined {
+  return value?.trim().replace(/^['"]|['"]$/g, '');
 }
