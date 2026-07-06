@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangleIcon, CopyIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { pickLang } from '@/lib/bilingual';
 import {
   Sheet,
   SheetContent,
@@ -207,6 +209,7 @@ function FindingCard({
   onReopen,
   resolving,
 }: FindingCardProps) {
+  const { i18n } = useTranslation();
   const sev = finding.severity as ComplianceSeverity;
   const status = finding.resolution_status;
   const isFinal = status === 'fixed' || status === 'acknowledged';
@@ -262,7 +265,7 @@ function FindingCard({
                     finding.suggested_correction,
                   );
                   toast.success(
-                    'コピーしました / Copied to clipboard',
+                    pickLang(i18n.language, 'コピーしました', 'Copied to clipboard'),
                   );
                 }
               }}

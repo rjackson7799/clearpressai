@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { pickLang } from '@/lib/bilingual';
 import {
   AlertTriangleIcon,
   ExternalLinkIcon,
@@ -77,6 +79,7 @@ function toStringArray(value: unknown): string[] {
 }
 
 export function ClientFeedbackTab({ clientId }: Props) {
+  const { i18n } = useTranslation();
   const feedbackQ = useClientFeedback(clientId);
   const guidelinesQ = useFeedbackSourcedGuidelines(clientId);
   const retriggerM = useRetriggerFeedbackDelta(clientId);
@@ -88,11 +91,19 @@ export function ClientFeedbackTab({ clientId }: Props) {
         onSuccess: (result) => {
           if (result.delta_status === 'succeeded') {
             toast.success(
-              'ガイドラインを再生成しました / Guidelines regenerated',
+              pickLang(
+                i18n.language,
+                'ガイドラインを再生成しました',
+                'Guidelines regenerated',
+              ),
             );
           } else {
             toast.error(
-              'ガイドライン抽出が再度失敗しました / Guideline extraction failed again',
+              pickLang(
+                i18n.language,
+                'ガイドライン抽出が再度失敗しました',
+                'Guideline extraction failed again',
+              ),
             );
           }
         },
@@ -115,7 +126,10 @@ export function ClientFeedbackTab({ clientId }: Props) {
   if (feedbackQ.isError) {
     return (
       <div className="text-sm text-destructive">
-        {(feedbackQ.error as Error).message}
+        <BilingualLabel
+          ja="フィードバックの読み込みに失敗しました"
+          en="Failed to load feedback"
+        />
       </div>
     );
   }
@@ -196,13 +210,16 @@ function FeedbackRow({
                 className="border-destructive text-destructive"
               >
                 <AlertTriangleIcon className="mr-1 size-3" />
-                Delta failed
+                <BilingualLabel
+                  ja="ガイドライン抽出失敗"
+                  en="Guideline extraction failed"
+                />
               </Badge>
             )}
             {row.delta_generation_status === 'pending' && (
               <Badge variant="outline">
                 <RefreshCcwIcon className="mr-1 size-3" />
-                Pending
+                <BilingualLabel ja="処理中" en="Pending" />
               </Badge>
             )}
             <Link
@@ -229,8 +246,11 @@ function FeedbackRow({
           ) : row.chosen_variant ? (
             <Badge variant="default" className="px-2.5">
               <span className="text-xs">
-                案{row.chosen_variant.variant_index} ·{' '}
-                {row.chosen_variant.variant_label}
+                <BilingualLabel
+                  ja={`案${row.chosen_variant.variant_index}`}
+                  en={`Variant ${row.chosen_variant.variant_index}`}
+                />{' '}
+                · {row.chosen_variant.variant_label}
               </span>
             </Badge>
           ) : (
@@ -281,7 +301,7 @@ function FeedbackRow({
                   <span>{g.guideline_text}</span>
                   {!g.active && (
                     <Badge variant="outline" className="ml-2 text-xs">
-                      Archived
+                      <BilingualLabel ja="アーカイブ済" en="Archived" />
                     </Badge>
                   )}
                 </li>

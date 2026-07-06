@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { pickLang } from "@/lib/bilingual";
 import {
   FileTextIcon,
   GitBranchIcon,
@@ -46,6 +48,7 @@ const STATUS_VARIANT: Record<
 
 export default function AuditReportPage() {
   const { id: projectId } = useParams<{ id: string }>();
+  const { i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedReportId = searchParams.get("reportId");
 
@@ -100,7 +103,10 @@ export default function AuditReportPage() {
 
   const handleCreate = () => {
     create.mutate(undefined, {
-      onSuccess: () => toast.success("監査レポートを作成 / Audit report created"),
+      onSuccess: () =>
+        toast.success(
+          pickLang(i18n.language, "監査レポートを作成しました", "Audit report created"),
+        ),
       onError: (e) => toast.error(e.message),
     });
   };
@@ -177,10 +183,7 @@ export default function AuditReportPage() {
               <p className="font-mono text-sm">{selectedReport.report_id_display}</p>
               <div className="flex items-center gap-2 text-sm flex-wrap">
                 <Badge variant={STATUS_VARIANT[status]}>
-                  {STATUS_LABEL[status].ja}
-                  <span className="text-xs opacity-70 ml-1">
-                    {STATUS_LABEL[status].en}
-                  </span>
+                  <BilingualLabel {...STATUS_LABEL[status]} />
                 </Badge>
                 <span className="text-muted-foreground">
                   <BilingualLabel ja="バージョン" en="Version" /> {selectedReport.version}
@@ -285,19 +288,22 @@ export default function AuditReportPage() {
               >
                 <header className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2">
-                    <Badge variant="secondary">案{v.variant_index}</Badge>
+                    <Badge variant="secondary">
+                      <BilingualLabel
+                        ja={`案${v.variant_index}`}
+                        en={`Variant ${v.variant_index}`}
+                      />
+                    </Badge>
                     <h2 className="text-base font-medium">{v.variant_label}</h2>
                     <Badge variant="default">
                       <BilingualLabel ja="承認済" en="Approved" />
                     </Badge>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {v.char_count}字 ·{" "}
                     <BilingualLabel
-                      ja={`読了時間 約${Math.max(1, Math.round(v.reading_time_seconds / 60))}分`}
-                      en={`~${Math.max(1, Math.round(v.reading_time_seconds / 60))} min`}
-                    />{" "}
-                    · {v.model_used}
+                      ja={`${v.char_count}字 · 読了時間 約${Math.max(1, Math.round(v.reading_time_seconds / 60))}分 · ${v.model_used}`}
+                      en={`${v.char_count} chars · ~${Math.max(1, Math.round(v.reading_time_seconds / 60))} min · ${v.model_used}`}
+                    />
                   </span>
                 </header>
 
@@ -355,7 +361,9 @@ export default function AuditReportPage() {
         onOpenChange={setSignOpen}
         projectId={projectId}
         onSigned={() =>
-          toast.success("署名を完了しました / Audit report signed")
+          toast.success(
+            pickLang(i18n.language, "署名を完了しました", "Audit report signed"),
+          )
         }
       />
 
@@ -365,7 +373,9 @@ export default function AuditReportPage() {
         onOpenChange={setReviseOpen}
         projectId={projectId}
         onRevised={(newReport) => {
-          toast.success("改訂版を作成しました / Revision created");
+          toast.success(
+            pickLang(i18n.language, "改訂版を作成しました", "Revision created"),
+          );
           setSearchParams({ reportId: newReport.id });
         }}
       />

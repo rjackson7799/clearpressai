@@ -1,13 +1,16 @@
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { BilingualLabel } from '@/components/shared/BilingualLabel';
 import { NewProjectForm } from '@/components/project/NewProjectForm';
 import { useCreateProject } from '@/hooks/useProjects';
+import { pickLang } from '@/lib/bilingual';
 import type { NewProjectFormValues } from '@/components/project/NewProjectForm.schema';
 
 export default function NewProjectPage() {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
   const createProject = useCreateProject();
 
   const handleSubmit = async (values: NewProjectFormValues) => {
@@ -29,7 +32,9 @@ export default function NewProjectPage() {
           ? values.brief_constraints
           : null,
       });
-      toast.success('プロジェクトを作成しました / Project created');
+      toast.success(
+        pickLang(i18n.language, 'プロジェクトを作成しました', 'Project created'),
+      );
       navigate(`/projects/${project.id}/review`);
     } catch (e) {
       toast.error((e as Error).message);

@@ -7,15 +7,8 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BilingualLabel } from '@/components/shared/BilingualLabel';
+import { projectStatusLabel } from '@/lib/project-status';
 import type { ProjectSummary } from '@/types/domain';
-
-const STATUS_LABELS: Record<string, { ja: string; en: string }> = {
-  draft: { ja: '下書き', en: 'Draft' },
-  in_review: { ja: 'レビュー中', en: 'In Review' },
-  delivered: { ja: '送付済', en: 'Delivered' },
-  feedback_received: { ja: 'フィードバック受領', en: 'Feedback' },
-  completed: { ja: '完了', en: 'Completed' },
-};
 
 interface Props {
   projects: ProjectSummary[];
@@ -33,7 +26,7 @@ export function RecentProjects({ projects }: Props) {
       </CardHeader>
       <CardContent className="space-y-1">
         {recent.map((row) => {
-          const statusLabel = row.status ? STATUS_LABELS[row.status] : null;
+          const statusLabel = row.status ? projectStatusLabel(row.status) : null;
           return (
             <Link
               key={row.id ?? `${row.client_id}-${row.name}`}

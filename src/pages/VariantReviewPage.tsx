@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { pickLang } from '@/lib/bilingual';
+import { projectStatusLabel } from '@/lib/project-status';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,6 +32,7 @@ import { LockIcon } from 'lucide-react';
 
 export default function VariantReviewPage() {
   const { id: projectId } = useParams<{ id: string }>();
+  const { i18n } = useTranslation();
   const { data: project } = useProject(projectId);
   const { data: contentItem } = useContentItemForProject(projectId);
   const { data: client } = useClient(project?.client_id);
@@ -115,7 +119,11 @@ export default function VariantReviewPage() {
       // is one atomic gesture and skipping the body edit while flipping
       // status would be dishonest.
       toast.warning(
-        '本文に該当箇所が見つかりません / Source text not found in body',
+        pickLang(
+          i18n.language,
+          '本文に該当箇所が見つかりません',
+          'Source text not found in body',
+        ),
       );
       return;
     }
@@ -136,7 +144,7 @@ export default function VariantReviewPage() {
         newCharCount,
         newReadingTimeSeconds,
       });
-      toast.success('修正を適用しました / Fix applied');
+      toast.success(pickLang(i18n.language, '修正を適用しました', 'Fix applied'));
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -197,7 +205,9 @@ export default function VariantReviewPage() {
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             {client?.name ? <span>{client.name}</span> : <span>—</span>}
             {project?.status && (
-              <Badge variant="outline">{project.status}</Badge>
+              <Badge variant="outline">
+                <BilingualLabel {...projectStatusLabel(project.status)} />
+              </Badge>
             )}
           </div>
           <h1 className="text-2xl">{project?.name ?? '—'}</h1>
@@ -303,6 +313,12 @@ export default function VariantReviewPage() {
                   approveVariant.mutate(
                     { variantId: variant.id, approved: next },
                     {
+                      onSuccess: () =>
+                        toast.success(
+                          next
+                            ? pickLang(i18n.language, '案を承認しました', 'Variant approved')
+                            : pickLang(i18n.language, '承認を取り消しました', 'Approval removed'),
+                        ),
                       onError: (e) => toast.error(e.message),
                     },
                   );
@@ -321,7 +337,11 @@ export default function VariantReviewPage() {
                           );
                         }
                         toast.success(
-                          `案${variant.variant_index}を再生成しました`,
+                          pickLang(
+                            i18n.language,
+                            `案${variant.variant_index}を再生成しました`,
+                            `Variant ${variant.variant_index} regenerated`,
+                          ),
                         );
                       },
                     },
