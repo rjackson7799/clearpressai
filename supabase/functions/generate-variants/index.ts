@@ -26,8 +26,11 @@ import {
   VARIATION_DIRECTIVES,
   buildVariantUserMessage,
   parseSubTypeMarker,
+  exceedsHardCap,
   type ContentSubType,
-  type VariationAxis,
+  type TargetAudience,
+  type DrugLifecycleStatus,
+  type DistributionChannel,
 } from './_prompt.ts';
 import { handlePreflight } from '../_shared/cors.ts';
 import { jsonResponse, jsonError } from '../_shared/errors.ts';
@@ -110,7 +113,7 @@ Deno.serve(async (req: Request) => {
   const { data: contentItem, error: contentItemError } = await supabase
     .from('content_items')
     .select(
-      'id, project_id, content_type, content_sub_type, brief_free_text, brief_key_messages, brief_quotes, brief_data_points, brief_constraints, variation_axis, language',
+      'id, project_id, content_type, content_sub_type, brief_free_text, brief_key_messages, brief_quotes, brief_data_points, brief_constraints, language, target_audience, drug_lifecycle_status, distribution_channel, length_target_chars, enforce_hard_cap, variant_count',
     )
     .eq('id', content_item_id)
     .single();
@@ -196,11 +199,23 @@ Deno.serve(async (req: Request) => {
   ].join('\n');
   const briefHash = await sha256Hex(briefInput);
 
+  const variantCount = (contentItem.variant_count ?? 3) as number;
+  const fullIndices: (1 | 2 | 3)[] = ([1, 2, 3] as const).filter(
+    (i) => i <= variantCount,
+  );
   const indicesToGenerate: (1 | 2 | 3)[] = variant_index
     ? [variant_index as 1 | 2 | 3]
-    : [1, 2, 3];
-  const variationAxis = contentItem.variation_axis as VariationAxis;
+    : fullIndices;
+  // variation_axis was removed with the New Project redesign; variants now
+  // always differ by the fixed 'tone' directives.
+  const variationAxis = 'tone' as const;
   const subType = contentItem.content_sub_type as ContentSubType;
+  const audience = contentItem.target_audience as TargetAudience;
+  const lifecycle = contentItem.drug_lifecycle_status as DrugLifecycleStatus;
+  const channel = contentItem.distribution_channel as DistributionChannel;
+  const lengthTargetChars = (contentItem.length_target_chars ??
+    null) as number | null;
+  const enforceHardCap = (contentItem.enforce_hard_cap ?? false) as boolean;
 
   const voiceProfileForPrompt = {
     tone_keywords: (voiceProfile.tone_keywords ?? []) as string[],
@@ -218,6 +233,11 @@ Deno.serve(async (req: Request) => {
     contentType: contentItem.content_type,
     subType,
     language: contentItem.language as 'ja' | 'en',
+    audience,
+    lifecycle,
+    channel,
+    lengthTargetChars,
+    enforceHardCap,
   });
 
   const generatedAt = new Date().toISOString();
@@ -238,7 +258,7 @@ Deno.serve(async (req: Request) => {
     const variantPromises = indicesToGenerate.map(async (index) => {
       const directive = VARIATION_DIRECTIVES[variationAxis][index];
 
-      const userMessage = buildVariantUserMessage({
+      const baseUserMessage = buildVariantUserMessage({
         contentItem: {
           brief_free_text: contentItem.brief_free_text ?? '',
           brief_key_messages: (contentItem.brief_key_messages ??
@@ -254,20 +274,55 @@ Deno.serve(async (req: Request) => {
         directive,
       });
 
-      const response = await anthropic.messages.create({
-        model: CLAUDE_MODELS.variant_generation,
-        max_tokens: 4096,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userMessage }],
-      });
+      const generateOnce = async (userMessage: string) => {
+        const response = await anthropic.messages.create({
+          model: CLAUDE_MODELS.variant_generation,
+          max_tokens: 4096,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userMessage }],
+        });
+        const textBlock = response.content.find((b) => b.type === 'text');
+        if (!textBlock || textBlock.type !== 'text') {
+          throw new Error(`variant ${index}: no text block in response`);
+        }
+        const parsed = parseSubTypeMarker(textBlock.text);
+        return {
+          response,
+          body: parsed.body,
+          sub_type_classified: parsed.sub_type_classified,
+          charCount: Array.from(parsed.body).length,
+        };
+      };
 
-      const textBlock = response.content.find((b) => b.type === 'text');
-      if (!textBlock || textBlock.type !== 'text') {
-        throw new Error(`variant ${index}: no text block in response`);
+      // Real hard-cap enforcement: when enforce_hard_cap is on, an over-cap
+      // draft gets ONE stricter retry, then a clear error if still over. No
+      // truncation (would sever Japanese sentences / mandatory boilerplate).
+      let result = await generateOnce(baseUserMessage);
+      let hardCapRetried = false;
+      if (
+        exceedsHardCap({
+          charCount: result.charCount,
+          lengthTargetChars,
+          enforceHardCap,
+        })
+      ) {
+        hardCapRetried = true;
+        const stricter = `${baseUserMessage}\n\nSTRICT: your previous draft was ${result.charCount}字, over the ${lengthTargetChars}字 hard cap. Rewrite so the output is at or under ${lengthTargetChars}字, preserving required disclosures.`;
+        result = await generateOnce(stricter);
+      }
+      if (
+        exceedsHardCap({
+          charCount: result.charCount,
+          lengthTargetChars,
+          enforceHardCap,
+        })
+      ) {
+        throw new Error(
+          `variant ${index} exceeds hard cap: ${result.charCount}字 > ${lengthTargetChars}字 after one retry`,
+        );
       }
 
-      const { body, sub_type_classified } = parseSubTypeMarker(textBlock.text);
-      const charCount = Array.from(body).length;
+      const { response, body, sub_type_classified, charCount } = result;
       const readingTimeSeconds = Math.ceil(charCount / 6);
 
       const generationParams = {
@@ -277,6 +332,17 @@ Deno.serve(async (req: Request) => {
         sub_type_input: subType,
         sub_type_classified,
         length_norm_fallback: lengthNormFallback,
+        hard_cap: {
+          enabled: enforceHardCap,
+          target: lengthTargetChars,
+          final_char_count: charCount,
+          retried: hardCapRetried,
+          satisfied: !exceedsHardCap({
+            charCount,
+            lengthTargetChars,
+            enforceHardCap,
+          }),
+        },
         max_tokens: 4096,
         brief_hash: briefHash,
         triggered_by_user_id: userId,

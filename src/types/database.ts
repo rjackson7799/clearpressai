@@ -592,10 +592,16 @@ export type Database = {
           content_sub_type: string
           content_type: string
           created_at: string
+          distribution_channel: string
+          drug_lifecycle_status: string
+          enforce_hard_cap: boolean
           id: string
           language: string
+          length_target_chars: number | null
+          length_tier: string
           project_id: string
-          variation_axis: string
+          target_audience: string
+          variant_count: number
         }
         Insert: {
           brief_constraints?: string | null
@@ -606,10 +612,16 @@ export type Database = {
           content_sub_type?: string
           content_type: string
           created_at?: string
+          distribution_channel?: string
+          drug_lifecycle_status?: string
+          enforce_hard_cap?: boolean
           id?: string
           language?: string
+          length_target_chars?: number | null
+          length_tier?: string
           project_id: string
-          variation_axis?: string
+          target_audience?: string
+          variant_count?: number
         }
         Update: {
           brief_constraints?: string | null
@@ -620,10 +632,16 @@ export type Database = {
           content_sub_type?: string
           content_type?: string
           created_at?: string
+          distribution_channel?: string
+          drug_lifecycle_status?: string
+          enforce_hard_cap?: boolean
           id?: string
           language?: string
+          length_target_chars?: number | null
+          length_tier?: string
           project_id?: string
-          variation_axis?: string
+          target_audience?: string
+          variant_count?: number
         }
         Relationships: [
           {

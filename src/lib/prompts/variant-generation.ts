@@ -21,7 +21,7 @@ import { CLAUDE_MODELS } from './brand-voice';
 
 export { CLAUDE_MODELS };
 
-export const VARIANT_GENERATION_PROMPT_VERSION = 'v1-phase7-length-cap';
+export const VARIANT_GENERATION_PROMPT_VERSION = 'v2-audience-lifecycle';
 
 export type ContentSubType =
   | 'auto'
@@ -31,6 +31,22 @@ export type ContentSubType =
   | 'business_news';
 
 export type VariationAxis = 'tone' | 'structure' | 'length';
+
+export type TargetAudience =
+  | 'hcp'
+  | 'patient_public'
+  | 'investor_ir'
+  | 'trade_media'
+  | 'news_media';
+
+export type DrugLifecycleStatus = 'pre_approval' | 'in_trial' | 'approved';
+
+export type DistributionChannel =
+  | 'pr_times'
+  | 'corporate_site'
+  | 'trade_press'
+  | 'wire_service'
+  | 'other';
 
 // drift:start VARIATION_DIRECTIVES
 export const VARIATION_DIRECTIVES = {
@@ -106,7 +122,43 @@ export interface VariantSystemArgs {
     | 'csr_event'
     | 'business_news';
   language: 'ja' | 'en';
+  audience: TargetAudience;
+  lifecycle: DrugLifecycleStatus;
+  channel: DistributionChannel;
+  lengthTargetChars: number | null;
+  enforceHardCap: boolean;
 }
+
+const AUDIENCE_INSTRUCTIONS = {
+  hcp: 'Healthcare professionals (医療従事者): use precise clinical terminology, cite endpoints and study design, assume domain fluency.',
+  patient_public:
+    'Patients and general public (患者・一般): use plain language, explain technical terms, lead with patient relevance, avoid jargon.',
+  investor_ir:
+    'Investors / IR (投資家・IR): frame around business impact, pipeline and corporate strategy; keep clinical detail concise.',
+  trade_media:
+    'Trade / industry media (業界メディア): journalistic register with industry context; assume sector familiarity.',
+  news_media:
+    'General news media (報道機関): journalistic register, newsworthy lead, minimal jargon, broad accessibility.',
+} satisfies Record<TargetAudience, string>;
+
+const LIFECYCLE_POSTURE = {
+  pre_approval:
+    'PRE-APPROVAL (承認申請前): the product is NOT yet approved. Use investigational framing ONLY. Do NOT state or imply any efficacy or safety claim, and use no approved-indication language. Treat the 薬機法 gate as strict.',
+  in_trial:
+    'IN-TRIAL (治験中): trial-stage framing. Report results only alongside statistical context (CI, p-value, sample size); draw no conclusions beyond the data.',
+  approved:
+    'APPROVED (承認済): approved-indication claims are permitted within the approved scope, with required disclosures.',
+} satisfies Record<DrugLifecycleStatus, string>;
+
+const CHANNEL_NOTES = {
+  pr_times:
+    'PR TIMES — follow standard press-release formatting (headline, dateline, boilerplate footer).',
+  corporate_site:
+    'Corporate website — company-owned publishing, brand-consistent tone.',
+  trade_press: 'Trade press — industry-outlet framing.',
+  wire_service: 'Wire service — concise, syndication-ready.',
+  other: 'General distribution.',
+} satisfies Record<DistributionChannel, string>;
 
 export const VARIANT_GENERATION_SYSTEM = ({
   voiceProfile,
@@ -114,6 +166,11 @@ export const VARIANT_GENERATION_SYSTEM = ({
   contentType,
   subType,
   language,
+  audience,
+  lifecycle,
+  channel,
+  lengthTargetChars,
+  enforceHardCap,
 }: VariantSystemArgs): string => {
   const subTypeBlock =
     subType === 'auto'
@@ -126,6 +183,13 @@ export const VARIANT_GENERATION_SYSTEM = ({
       : '- (none)';
 
   const lengthHint = voiceProfile.length_norms[contentType] ?? 'standard';
+
+  const lengthTargetBlock =
+    lengthTargetChars != null
+      ? enforceHardCap
+        ? `\nEXPLICIT LENGTH TARGET (HARD CAP): Aim for approximately ${lengthTargetChars}字, and DO NOT exceed ${lengthTargetChars}字 under any circumstance. Count characters before emitting; if over, condense until at or under the cap.\n`
+        : `\nEXPLICIT LENGTH TARGET: Aim for approximately ${lengthTargetChars}字. Treat the sub-type cap above as the outer bound.\n`
+      : '';
 
   return `You are a Japanese pharmaceutical PR writer at a top Tokyo PR firm. You write for one specific client whose voice profile is below. Match this voice precisely.
 
@@ -140,6 +204,12 @@ CLIENT VOICE PROFILE:
 ADDITIONAL GUIDELINES (accumulated from feedback and internal review):
 ${guidelinesBlock}
 
+TARGET AUDIENCE: ${AUDIENCE_INSTRUCTIONS[audience]}
+
+REGULATORY POSTURE — ${LIFECYCLE_POSTURE[lifecycle]}
+
+DISTRIBUTION CHANNEL: ${CHANNEL_NOTES[channel]}
+
 CONTENT SUB-TYPE LENGTH CAP (HARD — overrides the profile's length string AND any length pull from the variation directive):
 - full_clinical (完全臨床発表): 1,200–2,000字. Includes endpoint data, study design, full safety profile.
 - partner_ack (パートナー謝辞): 700–1,200字. Brief, focused on the partnership and named executives.
@@ -147,7 +217,7 @@ CONTENT SUB-TYPE LENGTH CAP (HARD — overrides the profile's length string AND 
 - business_news (ビジネスニュース): 700–1,300字. Corporate / organizational announcements.
 
 LENGTH PRECEDENCE: The sub-type cap above is authoritative. If the variation directive implies a longer or shorter style (e.g. "accessible" / "patient-impact lead" / "detailed"), express that style WITHIN the cap by tightening word choice and trimming background — not by exceeding the upper bound. Before emitting, mentally count characters; if over the cap, condense (remove background paragraphs, tighten phrasing) until inside it.
-
+${lengthTargetBlock}
 SUB-TYPE: ${subType}
 ${subTypeBlock}
 
@@ -233,6 +303,28 @@ export const parseSubTypeMarker = (
   return { body, sub_type_classified: sub_type };
 };
 // drift:end parseSubTypeMarker
+
+// drift:start evaluateHardCap
+export interface HardCapArgs {
+  charCount: number;
+  lengthTargetChars: number | null;
+  enforceHardCap: boolean;
+}
+
+/**
+ * Whether a generated draft violates the hard cap. Inactive (disabled or no
+ * target) never violates. Kept pure so the enforce → retry → error decision in
+ * generate-variants is unit-testable without a live API.
+ */
+export const exceedsHardCap = ({
+  charCount,
+  lengthTargetChars,
+  enforceHardCap,
+}: HardCapArgs): boolean => {
+  if (!enforceHardCap || lengthTargetChars == null) return false;
+  return charCount > lengthTargetChars;
+};
+// drift:end evaluateHardCap
 
 export const VariantResponseSchema = z.object({
   body_text: z.string().min(1),

@@ -32,6 +32,7 @@ const DRIFT_REGIONS = [
   'VARIANT_GENERATION_SYSTEM',
   'buildVariantUserMessage',
   'parseSubTypeMarker',
+  'evaluateHardCap',
 ] as const;
 
 describe('Variant-generation prompt sync (src vs supabase/functions)', () => {

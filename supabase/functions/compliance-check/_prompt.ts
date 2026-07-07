@@ -19,15 +19,32 @@ export const CLAUDE_MODELS = {
   guideline_delta: 'claude-haiku-4-5-20251001',
 } as const;
 
-export const COMPLIANCE_PROMPT_VERSION = 'v1-phase3-baseline';
+export const COMPLIANCE_PROMPT_VERSION = 'v2-lifecycle-aware';
+
+export type DrugLifecycleStatus = 'pre_approval' | 'in_trial' | 'approved';
 
 // drift:start COMPLIANCE_SYSTEM
-export const COMPLIANCE_SYSTEM = `
+const LIFECYCLE_POSTURE = {
+  pre_approval:
+    'PRE-APPROVAL (承認申請前): the product is NOT yet approved. Treat ANY efficacy or safety claim, or approved-indication language, as a blocker. Investigational framing is required.',
+  in_trial:
+    'IN-TRIAL (治験中): trial-stage. Efficacy/safety statements must carry statistical context (CI, p-value, sample size); flag unqualified claims.',
+  approved:
+    'APPROVED (承認済): approved-indication claims are permitted within scope; still flag 誇大表現 and unqualified superlatives.',
+} satisfies Record<DrugLifecycleStatus, string>;
+
+export const COMPLIANCE_SYSTEM = ({
+  lifecycle,
+}: {
+  lifecycle: DrugLifecycleStatus;
+}): string => `
 You are a Japanese pharmaceutical regulatory compliance reviewer. Your job is to identify potential violations of:
 
 - 薬機法 (Pharmaceutical Affairs Law) — especially Article 66 (誇大表現 prohibition)
 - 医薬品等適正広告基準 (Standards for Proper Advertising of Pharmaceuticals)
 - PMDA広告ガイドライン (PMDA Advertising Guidelines)
+
+REGULATORY POSTURE — ${LIFECYCLE_POSTURE[lifecycle]}
 
 For each issue, output a finding with:
 - severity: "blocker" (clear violation), "warning" (potential issue), "note" (minor stylistic)

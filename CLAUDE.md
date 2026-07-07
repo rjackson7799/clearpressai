@@ -337,6 +337,7 @@ These are project conventions worth knowing before touching code:
 
 - **No invented spec ambiguities.** PRD and TSD have known unresolved items (tracked in the plan file). Don't paper over them with assumptions; surface them for the user to decide.
 - **UI labels follow the language switcher (supersedes PRD §6.3).** As of 2026-06-09 the product owner replaced the old bilingual co-display rule: UI labels now render a **single** language driven by the header `LanguageToggle` (`i18n.language`). The `BilingualLabel` component still takes `ja`/`en` props but renders only the active language — keep using it (or `t()`) for labels; do NOT reintroduce side-by-side JA+English co-display. Body content stays single-language as before. PRD §6.3 still documents the old co-display behavior; amend it there if/when the PRD is revised.
+- **Design reference.** New full-page/form screens follow [`docs/DESIGN-REFERENCE.md`](docs/DESIGN-REFERENCE.md) — the card + gray-canvas + segmented-control/chip + summary-sidebar system from the New Project page (`/projects/new`). Tokens live in `src/index.css`.
 - **Comments.** Default to no comments. Only add when WHY is non-obvious (a constraint, an invariant, a workaround). Don't narrate WHAT well-named code already says.
 - **Don't add features beyond the task.** Bug fixes don't need cleanup; one-shots don't need helpers. No premature abstractions.
 - **Audit trail must record exact model version strings**, not friendly names. PRD §5.3 + TSD §10 explicitly call this out as a regulatory requirement.

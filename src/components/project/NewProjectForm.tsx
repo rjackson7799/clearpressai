@@ -1,11 +1,15 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFieldArray, useForm, useWatch } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { CheckIcon, PlusIcon, XIcon } from 'lucide-react';
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  PlusIcon,
+  ShieldAlertIcon,
+  XIcon,
+} from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Form,
   FormControl,
   FormField,
   FormItem,
@@ -15,6 +19,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -22,21 +27,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { BilingualLabel } from '@/components/shared/BilingualLabel';
+import { Badge } from '@/components/ui/badge';
 import { TagInput } from '@/components/brand-voice/TagInput';
+import { FormSectionCard } from '@/components/project/FormSectionCard';
+import { AudienceChips } from '@/components/project/AudienceChips';
 import { useClients } from '@/hooks/useClients';
 import { supabase } from '@/lib/supabase';
+import { pickLang } from '@/lib/bilingual';
+import { complianceLevel } from '@/lib/compliance-level';
 import {
-  newProjectFormSchema,
-  type NewProjectFormValues,
-} from '@/components/project/NewProjectForm.schema';
-
-interface Props {
-  onSubmit: (values: NewProjectFormValues) => Promise<void> | void;
-  submitting?: boolean;
-}
+  DRUG_LIFECYCLE_STATUSES,
+  DISTRIBUTION_CHANNELS,
+  LENGTH_TIERS,
+  LENGTH_TIER_PRESET_CHARS,
+} from '@/lib/project-options';
+import type { NewProjectFormValues } from '@/components/project/NewProjectForm.schema';
 
 const CONTENT_TYPES = [
   { value: 'press_release', ja: 'プレスリリース', en: 'Press Release' },
@@ -82,41 +90,18 @@ function useVoiceProfileForClient(clientId: string | undefined) {
   });
 }
 
-export function NewProjectForm({ onSubmit, submitting }: Props) {
-  const { t } = useTranslation();
+export function NewProjectForm() {
+  const { t, i18n } = useTranslation();
   const { data: clients = [] } = useClients();
+  const form = useFormContext<NewProjectFormValues>();
+  const { control, register, setValue } = form;
 
-  const form = useForm<NewProjectFormValues>({
-    resolver: zodResolver(newProjectFormSchema),
-    defaultValues: {
-      client_id: '',
-      name: '',
-      content_type: 'press_release',
-      content_sub_type: 'auto',
-      urgency: 'standard',
-      deadline: '',
-      variation_axis: 'tone',
-      language: 'ja',
-      brief_free_text: '',
-      brief_key_messages: [],
-      brief_quotes: [],
-      brief_data_points: [],
-      brief_constraints: '',
-    },
-  });
+  const quotesArray = useFieldArray({ control, name: 'brief_quotes' });
 
-  const quotesArray = useFieldArray({
-    control: form.control,
-    name: 'brief_quotes',
-  });
-
-  const watchedClientId = useWatch({ control: form.control, name: 'client_id' });
-  const watchedContentType = useWatch({
-    control: form.control,
-    name: 'content_type',
-  });
-  const watchedBriefText =
-    useWatch({ control: form.control, name: 'brief_free_text' }) ?? '';
+  const watchedClientId = useWatch({ control, name: 'client_id' });
+  const watchedContentType = useWatch({ control, name: 'content_type' });
+  const watchedLifecycle = useWatch({ control, name: 'drug_lifecycle_status' });
+  const watchedBriefText = useWatch({ control, name: 'brief_free_text' }) ?? '';
 
   const { data: lengthNorms } = useVoiceProfileForClient(
     watchedClientId || undefined,
@@ -124,9 +109,9 @@ export function NewProjectForm({ onSubmit, submitting }: Props) {
 
   useEffect(() => {
     if (watchedContentType !== 'press_release') {
-      form.setValue('content_sub_type', 'auto');
+      setValue('content_sub_type', 'auto');
     }
-  }, [watchedContentType, form]);
+  }, [watchedContentType, setValue]);
 
   const fallbackKey = (() => {
     if (!lengthNorms || lengthNorms[watchedContentType]) return null;
@@ -138,67 +123,77 @@ export function NewProjectForm({ onSubmit, submitting }: Props) {
   const briefCharCount = watchedBriefText.length;
   const briefStrong = briefCharCount >= 200;
 
+  const level = complianceLevel(watchedLifecycle);
+
   return (
-    <Form {...form}>
-      <form
-        noValidate
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-6 max-w-2xl"
+    <div className="space-y-6">
+      {/* § 1 — Project details */}
+      <FormSectionCard
+        step={1}
+        title={<BilingualLabel ja="プロジェクト詳細" en="Project details" />}
+        subtitle={
+          <BilingualLabel
+            ja="対象クライアントと締切"
+            en="Who this is for and when it's due"
+          />
+        }
       >
-        <FormField
-          control={form.control}
-          name="client_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                <BilingualLabel ja="クライアント" en="Client" />
-              </FormLabel>
-              <FormControl>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="—" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormControl>
-              <FormMessage>
-                {form.formState.errors.client_id?.message
-                  ? t(form.formState.errors.client_id.message)
-                  : null}
-              </FormMessage>
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                <BilingualLabel ja="プロジェクト名" en="Project name" />
-              </FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage>
-                {form.formState.errors.name?.message
-                  ? t(form.formState.errors.name.message)
-                  : null}
-              </FormMessage>
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField
-            control={form.control}
+            control={control}
+            name="client_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  <BilingualLabel ja="クライアント" en="Client" />
+                </FormLabel>
+                <FormControl>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage>
+                  {form.formState.errors.client_id?.message
+                    ? t(form.formState.errors.client_id.message)
+                    : null}
+                </FormMessage>
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  <BilingualLabel ja="プロジェクト名" en="Project name" />
+                </FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage>
+                  {form.formState.errors.name?.message
+                    ? t(form.formState.errors.name.message)
+                    : null}
+                </FormMessage>
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <FormField
+            control={control}
             name="content_type"
             render={({ field }) => (
               <FormItem>
@@ -225,7 +220,7 @@ export function NewProjectForm({ onSubmit, submitting }: Props) {
 
           {watchedContentType === 'press_release' && (
             <FormField
-              control={form.control}
+              control={control}
               name="content_sub_type"
               render={({ field }) => (
                 <FormItem>
@@ -269,9 +264,9 @@ export function NewProjectForm({ onSubmit, submitting }: Props) {
           </Alert>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField
-            control={form.control}
+            control={control}
             name="urgency"
             render={({ field }) => (
               <FormItem>
@@ -297,7 +292,7 @@ export function NewProjectForm({ onSubmit, submitting }: Props) {
           />
 
           <FormField
-            control={form.control}
+            control={control}
             name="deadline"
             render={({ field }) => (
               <FormItem>
@@ -313,39 +308,7 @@ export function NewProjectForm({ onSubmit, submitting }: Props) {
         </div>
 
         <FormField
-          control={form.control}
-          name="variation_axis"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                <BilingualLabel ja="バリエーション軸" en="Variation axis" />
-              </FormLabel>
-              <FormControl>
-                <RadioGroup
-                  className="flex gap-4"
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
-                  <label className="flex items-center gap-2">
-                    <RadioGroupItem value="tone" />
-                    <BilingualLabel ja="トーン" en="Tone" />
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <RadioGroupItem value="structure" />
-                    <BilingualLabel ja="構成" en="Structure" />
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <RadioGroupItem value="length" />
-                    <BilingualLabel ja="長さ" en="Length" />
-                  </label>
-                </RadioGroup>
-              </FormControl>
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
+          control={control}
           name="language"
           render={({ field }) => (
             <FormItem>
@@ -353,27 +316,183 @@ export function NewProjectForm({ onSubmit, submitting }: Props) {
                 <BilingualLabel ja="言語" en="Language" />
               </FormLabel>
               <FormControl>
-                <RadioGroup
-                  className="flex gap-4"
-                  onValueChange={field.onChange}
+                <SegmentedControl
                   value={field.value}
-                >
-                  <label className="flex items-center gap-2">
-                    <RadioGroupItem value="ja" />
-                    <span>日本語</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <RadioGroupItem value="en" />
-                    <span>English</span>
-                  </label>
-                </RadioGroup>
+                  onValueChange={field.onChange}
+                  options={[
+                    { value: 'ja', label: '日本語' },
+                    { value: 'en', label: 'English' },
+                  ]}
+                  aria-label="Language"
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+      </FormSectionCard>
+
+      {/* § 2 — Audience & format */}
+      <FormSectionCard
+        step={2}
+        title={<BilingualLabel ja="読者と形式" en="Audience & format" />}
+        subtitle={
+          <BilingualLabel
+            ja="主要コントロール — 以下に既定値を反映します"
+            en="Primary controls — these cascade sensible defaults into the rest"
+          />
+        }
+      >
+        <FormField
+          control={control}
+          name="target_audience"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="flex items-center gap-2">
+                <BilingualLabel ja="想定読者" en="Target audience" />
+                <Badge variant="secondary" className="font-normal">
+                  <BilingualLabel ja="主要コントロール" en="Master control" />
+                </Badge>
+              </FormLabel>
+              <FormControl>
+                <AudienceChips value={field.value} onChange={field.onChange} />
               </FormControl>
             </FormItem>
           )}
         />
 
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <FormField
+            control={control}
+            name="drug_lifecycle_status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  <BilingualLabel
+                    ja="薬事ライフサイクル"
+                    en="Drug lifecycle status"
+                  />
+                </FormLabel>
+                <FormControl>
+                  <SegmentedControl
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    options={DRUG_LIFECYCLE_STATUSES.map((s) => ({
+                      value: s.value,
+                      label: pickLang(i18n.language, s.ja, s.en),
+                    }))}
+                    aria-label="Drug lifecycle status"
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={control}
+            name="length_tier"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  <BilingualLabel ja="分量" en="Length" />
+                </FormLabel>
+                <FormControl>
+                  <SegmentedControl
+                    value={field.value}
+                    onValueChange={(v) => {
+                      field.onChange(v);
+                      setValue('length_target_chars', LENGTH_TIER_PRESET_CHARS[v], {
+                        shouldDirty: true,
+                      });
+                    }}
+                    options={LENGTH_TIERS.map((tier) => ({
+                      value: tier.value,
+                      label: pickLang(i18n.language, tier.ja, tier.en),
+                    }))}
+                    aria-label="Length"
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <FormField
+            control={control}
+            name="length_target_chars"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  <BilingualLabel ja="目標文字数" en="Target length (characters)" />
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min={100}
+                    max={10000}
+                    value={field.value ?? ''}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      field.onChange(v === '' ? null : Number(v));
+                    }}
+                  />
+                </FormControl>
+                <FormMessage>
+                  {form.formState.errors.length_target_chars?.message ?? null}
+                </FormMessage>
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={control}
+            name="enforce_hard_cap"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  <BilingualLabel ja="上限を厳守" en="Enforce hard cap" />
+                </FormLabel>
+                <FormControl>
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={(c) => field.onChange(c === true)}
+                    />
+                    <BilingualLabel
+                      ja="目標文字数を絶対上限として扱う"
+                      en="Treat target length as an absolute ceiling"
+                    />
+                  </label>
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <Alert variant={level.tone === 'strict' ? 'destructive' : 'default'}>
+          <ShieldAlertIcon className="size-4" />
+          <AlertTitle>
+            <BilingualLabel ja={level.titleJa} en={level.titleEn} />
+          </AlertTitle>
+          <AlertDescription>
+            <BilingualLabel ja={level.bodyJa} en={level.bodyEn} />
+          </AlertDescription>
+        </Alert>
+      </FormSectionCard>
+
+      {/* § 3 — Brief & content */}
+      <FormSectionCard
+        step={3}
+        title={<BilingualLabel ja="ブリーフと素材" en="Brief & content" />}
+        subtitle={
+          <BilingualLabel
+            ja="ドラフトの素材となる情報"
+            en="The raw material the draft is built from"
+          />
+        }
+      >
         <FormField
-          control={form.control}
+          control={control}
           name="brief_free_text"
           render={({ field }) => (
             <FormItem>
@@ -404,15 +523,12 @@ export function NewProjectForm({ onSubmit, submitting }: Props) {
         />
 
         <FormField
-          control={form.control}
+          control={control}
           name="brief_key_messages"
           render={({ field }) => (
             <FormItem>
               <FormLabel>
-                <BilingualLabel
-                  ja="キーメッセージ"
-                  en="Key messages"
-                />
+                <BilingualLabel ja="キーメッセージ" en="Key messages" />
               </FormLabel>
               <FormControl>
                 <TagInput
@@ -435,26 +551,22 @@ export function NewProjectForm({ onSubmit, submitting }: Props) {
             {quotesArray.fields.map((q, i) => (
               <div
                 key={q.id}
-                className="rounded-md border p-3 space-y-2 bg-muted/30"
+                className="space-y-2 rounded-md border bg-muted/30 p-3"
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                   <Input
                     placeholder={t('brief.quoteName', { defaultValue: '氏名' })}
-                    {...form.register(`brief_quotes.${i}.name`)}
+                    {...register(`brief_quotes.${i}.name`)}
                   />
                   <Input
-                    placeholder={t('brief.quoteTitle', {
-                      defaultValue: '役職',
-                    })}
-                    {...form.register(`brief_quotes.${i}.title`)}
+                    placeholder={t('brief.quoteTitle', { defaultValue: '役職' })}
+                    {...register(`brief_quotes.${i}.title`)}
                   />
                 </div>
                 <Textarea
                   rows={2}
-                  placeholder={t('brief.quoteText', {
-                    defaultValue: '発言',
-                  })}
-                  {...form.register(`brief_quotes.${i}.quote`)}
+                  placeholder={t('brief.quoteText', { defaultValue: '発言' })}
+                  {...register(`brief_quotes.${i}.quote`)}
                 />
                 <Button
                   type="button"
@@ -482,7 +594,7 @@ export function NewProjectForm({ onSubmit, submitting }: Props) {
         </FormItem>
 
         <FormField
-          control={form.control}
+          control={control}
           name="brief_data_points"
           render={({ field }) => (
             <FormItem>
@@ -503,7 +615,7 @@ export function NewProjectForm({ onSubmit, submitting }: Props) {
         />
 
         <FormField
-          control={form.control}
+          control={control}
           name="brief_constraints"
           render={({ field }) => (
             <FormItem>
@@ -516,13 +628,52 @@ export function NewProjectForm({ onSubmit, submitting }: Props) {
             </FormItem>
           )}
         />
+      </FormSectionCard>
 
-        <div className="pt-2">
-          <Button type="submit" disabled={submitting}>
-            <BilingualLabel ja="3案を生成" en="Generate 3 variants" />
-          </Button>
+      {/* Advanced settings */}
+      <details className="group rounded-xl bg-card ring-1 ring-foreground/10">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4">
+          <div className="space-y-0.5">
+            <div className="font-heading text-base font-medium">
+              <BilingualLabel ja="詳細設定" en="Advanced settings" />
+            </div>
+            <div className="text-sm text-muted-foreground">
+              <BilingualLabel
+                ja="トーン・コンプライアンス・チャネルの微調整。既定値を適用済み。"
+                en="Fine-tune tone, compliance and channel. Sensible defaults applied."
+              />
+            </div>
+          </div>
+          <ChevronDownIcon className="size-4 shrink-0 transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="space-y-4 px-4 pb-4">
+          <FormField
+            control={control}
+            name="distribution_channel"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  <BilingualLabel ja="配信チャネル" en="Distribution channel" />
+                </FormLabel>
+                <FormControl>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger className="md:w-64">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DISTRIBUTION_CHANNELS.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>
+                          <BilingualLabel ja={c.ja} en={c.en} />
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+              </FormItem>
+            )}
+          />
         </div>
-      </form>
-    </Form>
+      </details>
+    </div>
   );
 }

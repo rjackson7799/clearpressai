@@ -62,7 +62,23 @@ export type ContentSubType =
   | 'csr_event'
   | 'business_news';
 
-export type VariationAxis = 'tone' | 'structure' | 'length';
+export type TargetAudience =
+  | 'hcp'
+  | 'patient_public'
+  | 'investor_ir'
+  | 'trade_media'
+  | 'news_media';
+
+export type DrugLifecycleStatus = 'pre_approval' | 'in_trial' | 'approved';
+
+export type DistributionChannel =
+  | 'pr_times'
+  | 'corporate_site'
+  | 'trade_press'
+  | 'wire_service'
+  | 'other';
+
+export type LengthTier = 'short' | 'standard' | 'long';
 
 export type ProjectStatus =
   | 'draft'

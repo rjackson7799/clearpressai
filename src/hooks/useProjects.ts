@@ -6,10 +6,13 @@ import type {
   ContentItem,
   ContentSubType,
   ContentType,
+  DistributionChannel,
+  DrugLifecycleStatus,
+  LengthTier,
   Project,
   ProjectSummary,
   ProjectUrgency,
-  VariationAxis,
+  TargetAudience,
 } from '@/types/domain';
 
 const PROJECTS_KEY = ['projects'] as const;
@@ -71,8 +74,14 @@ export interface CreateProjectInput {
   deadline: string | null;
   content_type: ContentType;
   content_sub_type: ContentSubType;
-  variation_axis: VariationAxis;
   language: 'ja' | 'en';
+  target_audience: TargetAudience;
+  drug_lifecycle_status: DrugLifecycleStatus;
+  distribution_channel: DistributionChannel;
+  length_tier: LengthTier;
+  length_target_chars: number | null;
+  enforce_hard_cap: boolean;
+  variant_count: number;
   brief_free_text: string;
   brief_key_messages: string[];
   brief_quotes: BriefQuote[];
@@ -119,8 +128,14 @@ export function useCreateProject() {
           brief_quotes: input.brief_quotes as unknown as Json,
           brief_data_points: input.brief_data_points,
           brief_constraints: input.brief_constraints,
-          variation_axis: input.variation_axis,
           language: input.language,
+          target_audience: input.target_audience,
+          drug_lifecycle_status: input.drug_lifecycle_status,
+          distribution_channel: input.distribution_channel,
+          length_tier: input.length_tier,
+          length_target_chars: input.length_target_chars,
+          enforce_hard_cap: input.enforce_hard_cap,
+          variant_count: input.variant_count,
         })
         .select('*')
         .single();

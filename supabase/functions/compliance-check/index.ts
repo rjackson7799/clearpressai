@@ -24,6 +24,7 @@ import {
   runDeterministicChecks,
   type ComplianceFinding,
   type DeterministicFinding,
+  type DrugLifecycleStatus,
 } from './_prompt.ts';
 import { handlePreflight } from '../_shared/cors.ts';
 import { jsonResponse, jsonError } from '../_shared/errors.ts';
@@ -111,7 +112,7 @@ Deno.serve(async (req: Request) => {
         const { data: variantRow, error: variantError } = await supabase
           .from('content_variants')
           .select(
-            'id, body_text, content_items!inner(project_id, content_type, content_sub_type, projects!inner(client_id))',
+            'id, body_text, content_items!inner(project_id, content_type, content_sub_type, drug_lifecycle_status, projects!inner(client_id))',
           )
           .eq('id', variantId)
           .single();
@@ -126,10 +127,13 @@ Deno.serve(async (req: Request) => {
           project_id: string;
           content_type: string;
           content_sub_type: string;
+          drug_lifecycle_status: string;
           projects: { client_id: string };
         };
         const clientId = contentItem.projects.client_id;
         const projectId = contentItem.project_id;
+        const lifecycle =
+          contentItem.drug_lifecycle_status as DrugLifecycleStatus;
 
         const { data: voiceProfile, error: voiceProfileError } = await supabase
           .from('brand_voice_profiles')
@@ -166,7 +170,7 @@ Deno.serve(async (req: Request) => {
         const llmResponse = await anthropic.messages.create({
           model: CLAUDE_MODELS.compliance_check,
           max_tokens: 4096,
-          system: COMPLIANCE_SYSTEM,
+          system: COMPLIANCE_SYSTEM({ lifecycle }),
           messages: [
             {
               role: 'user',
@@ -240,6 +244,8 @@ Deno.serve(async (req: Request) => {
           deterministic_finding_count: deterministicFindings.length,
           llm_finding_count: llmFindingsTagged.length,
           total_finding_count: merged.length,
+          prompt_version: COMPLIANCE_PROMPT_VERSION,
+          drug_lifecycle_status: lifecycle,
         };
 
         const { data: rpcEnvelope, error: rpcError } = await supabase.rpc(

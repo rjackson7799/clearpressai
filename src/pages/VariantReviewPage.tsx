@@ -54,6 +54,10 @@ export default function VariantReviewPage() {
   // revisions (V1.1 in progress) keep editing unlocked.
   const isLocked = latestAuditReport?.status === 'finalized';
 
+  // Drives the transient generating/loading states so they match how many
+  // variants were actually requested (1–3), not a hardcoded 3.
+  const variantCount = contentItem?.variant_count ?? 3;
+
   const { data: findingsByVariant } = useComplianceFindings(
     contentItem?.id,
     variants,
@@ -249,12 +253,12 @@ export default function VariantReviewPage() {
           <Progress />
           <p className="text-sm text-muted-foreground">
             <BilingualLabel
-              ja="3案を生成中..."
-              en="Generating 3 variants..."
+              ja={`${variantCount}案を生成中...`}
+              en={`Generating ${variantCount} variants...`}
             />
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
+            {Array.from({ length: variantCount }).map((_, i) => (
               <div key={i} className="space-y-3 rounded-md border p-4">
                 <Skeleton className="h-6 w-24" />
                 <Skeleton className="h-4 w-full" />
@@ -269,7 +273,7 @@ export default function VariantReviewPage() {
 
       {!generating && variantsLoading && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
+          {Array.from({ length: variantCount }).map((_, i) => (
             <Skeleton key={i} className="h-64 w-full" />
           ))}
         </div>
