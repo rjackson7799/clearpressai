@@ -12,6 +12,20 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- This app registers no service worker; a pre-launch deployment left one
+         on some devices, serving a stale app. Unregister anything found. -->
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .getRegistrations()
+          .then(function (regs) {
+            regs.forEach(function (reg) {
+              reg.unregister();
+            });
+          })
+          .catch(function () {});
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
