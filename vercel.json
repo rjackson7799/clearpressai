@@ -4,6 +4,9 @@
   "buildCommand": "npm run build",
   "framework": "vite",
   "outputDirectory": "dist",
+  "redirects": [
+    { "source": "/auth/:path*", "destination": "/login", "permanent": false }
+  ],
   "rewrites": [
     { "source": "/((?!assets/).*)", "destination": "/index.html" }
   ],
