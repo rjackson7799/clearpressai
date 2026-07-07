@@ -1,29 +1,80 @@
+import { useEffect, useMemo, useState } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSlug from "rehype-slug";
 import { BilingualLabel } from "@/components/shared/BilingualLabel";
+import { cn } from "@/lib/utils";
 // Single source of truth: the Help page renders the same guide that lives in
 // docs/USER-GUIDE-ja.md, imported as a raw string so the page can never drift
 // from the committed document.
 import guideMarkdown from "../../docs/USER-GUIDE-ja.md?raw";
 
-// scroll-mt keeps in-page TOC jumps clear of the sticky app header. rehype-slug
-// assigns GitHub-style heading ids (github-slugger), which is exactly the
-// convention the guide's own table-of-contents anchors were written against, so
-// the links work in-app.
+interface Section {
+  id: string;
+  label: string;
+}
+
+// Derive the sticky-nav sections from the guide's own "目次" block — its links
+// (`N. [label](#id)`) already carry the exact anchor ids rehype-slug assigns to
+// the headings, so the two can't drift. Nothing else in the guide is a
+// line-leading numbered markdown link, so the regex only matches TOC entries.
+function extractSections(md: string): Section[] {
+  const out: Section[] = [];
+  const re = /^\s*\d+\.\s*\[([^\]]+)\]\(#([^)]+)\)/;
+  for (const line of md.split("\n")) {
+    const m = re.exec(line);
+    if (m) out.push({ label: m[1], id: m[2] });
+  }
+  return out;
+}
+
+// Highlight the section currently in view. rootMargin pulls the "active" band
+// up to the top third of the viewport so the highlight tracks what you're
+// reading rather than what's at the very bottom.
+function useActiveSection(ids: string[]): string | null {
+  const [active, setActive] = useState<string | null>(ids[0] ?? null);
+  useEffect(() => {
+    if (ids.length === 0 || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort(
+            (a, b) => a.boundingClientRect.top - b.boundingClientRect.top,
+          );
+        if (visible[0]) setActive(visible[0].target.id);
+      },
+      { rootMargin: "0px 0px -66% 0px", threshold: 0 },
+    );
+    const els = ids
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null);
+    els.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [ids]);
+  return active;
+}
+
+// scroll-mt keeps in-page jumps clear of the top edge. rehype-slug assigns
+// GitHub-style heading ids (github-slugger) — the same convention the guide's
+// TOC anchors were written against — and the heading components forward that
+// id so the anchors have a target to land on.
 const markdownComponents: Components = {
-  h1: ({ children }) => (
-    <h1 className="mt-2 mb-4 text-xl font-semibold tracking-tight">
+  h1: ({ id, children }) => (
+    <h1 id={id} className="mt-2 mb-4 text-xl font-semibold tracking-tight">
       {children}
     </h1>
   ),
-  h2: ({ children }) => (
-    <h2 className="mt-10 mb-3 scroll-mt-24 border-b pb-2 text-lg font-semibold tracking-tight">
+  h2: ({ id, children }) => (
+    <h2
+      id={id}
+      className="mt-10 mb-3 scroll-mt-24 border-b pb-2 text-lg font-semibold tracking-tight"
+    >
       {children}
     </h2>
   ),
-  h3: ({ children }) => (
-    <h3 className="mt-6 mb-2 scroll-mt-24 text-base font-semibold">
+  h3: ({ id, children }) => (
+    <h3 id={id} className="mt-6 mb-2 scroll-mt-24 text-base font-semibold">
       {children}
     </h3>
   ),
@@ -72,8 +123,7 @@ const markdownComponents: Components = {
     </pre>
   ),
   code: ({ className, children }) => {
-    const isBlock =
-      Boolean(className) || String(children).includes("\n");
+    const isBlock = Boolean(className) || String(children).includes("\n");
     if (isBlock) {
       return <code className={className}>{children}</code>;
     }
@@ -86,19 +136,52 @@ const markdownComponents: Components = {
 };
 
 export default function HelpPage() {
+  const sections = useMemo(() => extractSections(guideMarkdown), []);
+  const ids = useMemo(() => sections.map((s) => s.id), [sections]);
+  const active = useActiveSection(ids);
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl">
         <BilingualLabel ja="ヘルプ" en="Help" />
       </h1>
-      <div className="max-w-3xl">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          rehypePlugins={[rehypeSlug]}
-          components={markdownComponents}
-        >
-          {guideMarkdown}
-        </ReactMarkdown>
+      <div className="flex gap-8">
+        <article className="min-w-0 max-w-3xl flex-1">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeSlug]}
+            components={markdownComponents}
+          >
+            {guideMarkdown}
+          </ReactMarkdown>
+        </article>
+
+        {sections.length > 0 && (
+          <nav className="hidden w-60 shrink-0 lg:block" aria-label="目次">
+            <div className="sticky top-6 max-h-[calc(100vh-4rem)] overflow-y-auto pb-6">
+              <p className="mb-2 px-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                <BilingualLabel ja="目次" en="Contents" />
+              </p>
+              <ul className="space-y-0.5 text-sm">
+                {sections.map((s) => (
+                  <li key={s.id}>
+                    <a
+                      href={`#${s.id}`}
+                      className={cn(
+                        "block border-l-2 py-1 pl-3 leading-snug transition-colors",
+                        active === s.id
+                          ? "border-primary font-medium text-foreground"
+                          : "border-transparent text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {s.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </nav>
+        )}
       </div>
     </div>
   );
