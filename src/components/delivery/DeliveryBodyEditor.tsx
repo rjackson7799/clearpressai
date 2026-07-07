@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -8,6 +9,7 @@ import {
   ListIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { pickLang } from '@/lib/bilingual';
 
 interface Props {
   initialHtml: string;
@@ -22,11 +24,16 @@ interface Props {
 // outside this task's frontend-wiring scope) — Phase 7 polish or T8 can add
 // link/heading/blockquote support if the user wants them.
 export function DeliveryBodyEditor({ initialHtml, onChange }: Props) {
+  const { i18n } = useTranslation();
   const editor = useEditor({
     extensions: [
       StarterKit,
       Placeholder.configure({
-        placeholder: 'Compose the message body…',
+        placeholder: pickLang(
+          i18n.language,
+          'メール本文を入力…',
+          'Compose the message body…',
+        ),
       }),
     ],
     content: initialHtml,

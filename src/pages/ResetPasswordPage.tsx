@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BilingualLabel } from "@/components/shared/BilingualLabel";
 import { AuthShell } from "@/components/shared/AuthShell";
+import { explainAuthError } from "@/lib/auth-errors";
 
 export default function ResetPasswordPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +18,7 @@ export default function ResetPasswordPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const { error } = await supabase.auth.updateUser({ password });
-    if (error) setError(error.message);
+    if (error) setError(explainAuthError(error.message, i18n.language));
     else navigate("/");
   }
 

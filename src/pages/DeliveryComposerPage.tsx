@@ -10,7 +10,25 @@ export default function DeliveryComposerPage() {
   const { data: project, isPending, isError } = useProject(projectId);
 
   if (!projectId) return <Navigate to="/projects" replace />;
-  if (isError) return <Navigate to="/projects" replace />;
+
+  if (isError) {
+    // Explain and offer a way back instead of a silent bounce to /projects.
+    return (
+      <div className="max-w-4xl space-y-4">
+        <p className="text-sm text-muted-foreground">
+          <BilingualLabel
+            ja="プロジェクトを読み込めませんでした。"
+            en="This project could not be loaded."
+          />
+        </p>
+        <Button variant="outline" asChild>
+          <Link to="/projects">
+            <BilingualLabel ja="プロジェクト一覧に戻る" en="Back to projects" />
+          </Link>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl">

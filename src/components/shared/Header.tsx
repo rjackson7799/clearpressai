@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
+import { markIntentionalSignOut } from "@/lib/auth-events";
 import { LanguageToggle } from "./LanguageToggle";
 
 export function Header() {
@@ -18,7 +19,13 @@ export function Header() {
       </div>
       <div className="flex items-center gap-3">
         <LanguageToggle />
-        <Button variant="ghost" onClick={() => supabase.auth.signOut()}>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            markIntentionalSignOut();
+            void supabase.auth.signOut();
+          }}
+        >
           {t("common.logout")}
         </Button>
       </div>

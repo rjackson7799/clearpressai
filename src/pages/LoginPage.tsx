@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -7,14 +7,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BilingualLabel } from "@/components/shared/BilingualLabel";
 import { AuthShell } from "@/components/shared/AuthShell";
+import { explainAuthError } from "@/lib/auth-errors";
 
 export default function LoginPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+
+  // Return the user to the page they were bounced from (ProtectedRoute sets
+  // location.state.from), defaulting to the dashboard.
+  const from =
+    (location.state as { from?: { pathname?: string } } | null)?.from
+      ?.pathname ?? "/";
 
   async function signInWithPassword(e: React.FormEvent) {
     e.preventDefault();
@@ -22,8 +30,8 @@ export default function LoginPage() {
     setError(null);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setPending(false);
-    if (error) setError(error.message);
-    else navigate("/");
+    if (error) setError(explainAuthError(error.message, i18n.language));
+    else navigate(from, { replace: true });
   }
 
   async function sendMagicLink() {
@@ -34,7 +42,7 @@ export default function LoginPage() {
       options: { emailRedirectTo: `${import.meta.env.VITE_APP_URL}/` },
     });
     setPending(false);
-    if (error) setError(error.message);
+    if (error) setError(explainAuthError(error.message, i18n.language));
     else setError(`${t("auth.magic_link")} ✓`);
   }
 

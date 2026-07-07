@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BilingualLabel } from "@/components/shared/BilingualLabel";
 import { AuthShell } from "@/components/shared/AuthShell";
+import { explainAuthError } from "@/lib/auth-errors";
 
 export default function ForgotPasswordPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [email, setEmail] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -18,7 +19,11 @@ export default function ForgotPasswordPage() {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${import.meta.env.VITE_APP_URL}/reset-password`,
     });
-    setMsg(error ? error.message : `${t("auth.reset_password")} ✓`);
+    setMsg(
+      error
+        ? explainAuthError(error.message, i18n.language)
+        : `${t("auth.reset_password")} ✓`,
+    );
   }
 
   return (

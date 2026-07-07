@@ -49,12 +49,14 @@ interface Props {
   projectId: string;
 }
 
+// Seeds the (Japanese) email subject line, so keep every label Japanese for a
+// consistent default the user can still edit before sending.
 const SUB_TYPE_DISPLAY: Record<string, string> = {
   auto: 'プレスリリース',
-  full_clinical: 'Full Clinical',
-  partner_ack: 'Partner Acknowledgment',
-  csr_event: 'CSR / Event',
-  business_news: 'Business News',
+  full_clinical: '臨床試験関連',
+  partner_ack: 'パートナー協業',
+  csr_event: 'CSR・イベント',
+  business_news: '事業ニュース',
 };
 
 function getVariationDirective(v: ApprovedVariantRow): string | null {

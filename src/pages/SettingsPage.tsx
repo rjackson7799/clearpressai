@@ -7,7 +7,12 @@ export default function SettingsPage() {
   const { t } = useTranslation();
   const { data: user, isLoading } = useCurrentUser();
 
-  if (isLoading) return <div>{t("common.loading")}</div>;
+  if (isLoading)
+    return (
+      <div className="max-w-2xl space-y-6">
+        <div className="text-muted-foreground">{t("common.loading")}</div>
+      </div>
+    );
 
   return (
     <div className="max-w-2xl space-y-6">

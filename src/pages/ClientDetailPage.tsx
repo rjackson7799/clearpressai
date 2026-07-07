@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { ChevronLeftIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -91,6 +92,13 @@ export default function ClientDetailPage() {
 
   return (
     <div className="space-y-6">
+      <Link
+        to="/clients"
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ChevronLeftIcon className="size-4" />
+        <BilingualLabel ja="クライアント一覧" en="Clients" />
+      </Link>
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-medium">{client.name}</h1>
