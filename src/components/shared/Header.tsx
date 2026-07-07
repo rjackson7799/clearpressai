@@ -1,7 +1,10 @@
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
+import { CircleHelpIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { markIntentionalSignOut } from "@/lib/auth-events";
+import { BilingualLabel } from "./BilingualLabel";
 import { LanguageToggle } from "./LanguageToggle";
 
 export function Header() {
@@ -18,6 +21,12 @@ export function Header() {
         <div className="font-semibold tracking-tight">ClearPress AI</div>
       </div>
       <div className="flex items-center gap-3">
+        <Button variant="ghost" size="sm" asChild>
+          <Link to="/help">
+            <CircleHelpIcon className="size-4" />
+            <BilingualLabel ja="ヘルプ" en="Help" />
+          </Link>
+        </Button>
         <LanguageToggle />
         <Button
           variant="ghost"

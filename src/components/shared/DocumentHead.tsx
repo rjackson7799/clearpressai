@@ -20,6 +20,7 @@ const ROUTES: { test: RegExp; ja: string; en: string }[] = [
   { test: /^\/projects\/[^/]+\/deliver/, ja: "配信作成", en: "Compose delivery" },
   { test: /^\/projects/, ja: "プロジェクト", en: "Projects" },
   { test: /^\/settings/, ja: "設定", en: "Settings" },
+  { test: /^\/help/, ja: "ヘルプ", en: "Help" },
   { test: /^\/$/, ja: "ダッシュボード", en: "Dashboard" },
 ];
 
