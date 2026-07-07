@@ -9,5 +9,10 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test-setup.ts"],
     globals: true,
+    // Windows + vitest 4.1 crashes every file with "Cannot read properties of
+    // undefined (reading 'config')" under the default parallel worker pool.
+    // Disabling file parallelism makes `npm test` reliable everywhere without
+    // callers needing to pass --no-file-parallelism.
+    fileParallelism: false,
   },
 });
