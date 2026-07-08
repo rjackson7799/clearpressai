@@ -325,7 +325,7 @@ function DeliveryComposerForm({ projectId, project, variants }: FormProps) {
       <form
         noValidate
         onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-8"
+        className="space-y-6"
       >
         {mutation.error &&
           (() => {
@@ -347,7 +347,7 @@ function DeliveryComposerForm({ projectId, project, variants }: FormProps) {
           })()}
 
         {/* § 1 — Variants */}
-        <section className="space-y-3">
+        <section className="space-y-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
           <h2 className="text-base font-medium">
             <BilingualLabel ja="配信する案" en="Variants to deliver" />
             <span className="text-xs text-muted-foreground ml-2">
@@ -371,7 +371,7 @@ function DeliveryComposerForm({ projectId, project, variants }: FormProps) {
         </section>
 
         {/* § 2 — Recipient */}
-        <section className="space-y-3">
+        <section className="space-y-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
           <h2 className="text-base font-medium">
             <BilingualLabel ja="宛先" en="Recipient" />
           </h2>
@@ -430,7 +430,7 @@ function DeliveryComposerForm({ projectId, project, variants }: FormProps) {
         </section>
 
         {/* § 3 — Sender */}
-        <section className="space-y-3">
+        <section className="space-y-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
           <h2 className="text-base font-medium">
             <BilingualLabel ja="送信者" en="Sender" />
           </h2>
@@ -438,7 +438,7 @@ function DeliveryComposerForm({ projectId, project, variants }: FormProps) {
         </section>
 
         {/* § 4 — Subject */}
-        <section className="space-y-3">
+        <section className="space-y-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
           <FormField
             control={form.control}
             name="subject"
@@ -457,7 +457,7 @@ function DeliveryComposerForm({ projectId, project, variants }: FormProps) {
         </section>
 
         {/* § 5 — Body */}
-        <section className="space-y-3">
+        <section className="space-y-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
           <h2 className="text-base font-medium">
             <BilingualLabel ja="本文" en="Message body" />
           </h2>
@@ -499,7 +499,7 @@ function DeliveryComposerForm({ projectId, project, variants }: FormProps) {
         </section>
 
         {/* § 6 — Attachment format */}
-        <section className="space-y-3">
+        <section className="space-y-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
           <FormField
             control={form.control}
             name="attachment_format"
@@ -534,7 +534,7 @@ function DeliveryComposerForm({ projectId, project, variants }: FormProps) {
         </section>
 
         {/* § 7 — Send time */}
-        <section className="space-y-3">
+        <section className="space-y-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
           <h2 className="text-base font-medium">
             <BilingualLabel ja="送信タイミング" en="Send timing" />
           </h2>
@@ -580,7 +580,7 @@ function DeliveryComposerForm({ projectId, project, variants }: FormProps) {
         </section>
 
         {/* § 8 — Pre-send checklist */}
-        <section className="space-y-3">
+        <section className="space-y-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
           <PreSendChecklist
             state={checklist}
             hasSelectedVariants={selectedVariantRows.length > 0}

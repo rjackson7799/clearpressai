@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { BilingualLabel } from '@/components/shared/BilingualLabel';
+import { PageShell } from '@/components/shared/PageShell';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { VariantColumn } from '@/components/review/VariantColumn';
 import { CompliancePanel } from '@/components/review/CompliancePanel';
 import { useProject, useContentItemForProject } from '@/hooks/useProjects';
@@ -203,32 +205,34 @@ export default function VariantReviewPage() {
   }, [projectId, sortedVariants, recordReview]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            {client?.name ? <span>{client.name}</span> : <span>—</span>}
+    <PageShell>
+      <PageHeader
+        breadcrumb={client?.name ?? '—'}
+        title={
+          <span className="inline-flex items-center gap-3">
+            {project?.name ?? '—'}
             {project?.status && (
-              <Badge variant="outline">
+              <Badge variant="outline" className="text-xs font-normal">
                 <BilingualLabel {...projectStatusLabel(project.status)} />
               </Badge>
             )}
-          </div>
-          <h1 className="text-2xl">{project?.name ?? '—'}</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" asChild>
-            <Link to={`/projects/${projectId}/audit`}>
-              <BilingualLabel ja="監査レポート" en="Audit report" />
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link to="/projects">
-              <BilingualLabel ja="一覧に戻る" en="Back" />
-            </Link>
-          </Button>
-        </div>
-      </div>
+          </span>
+        }
+        actions={
+          <>
+            <Button variant="outline" asChild>
+              <Link to={`/projects/${projectId}/audit`}>
+                <BilingualLabel ja="監査レポート" en="Audit report" />
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/projects">
+                <BilingualLabel ja="一覧に戻る" en="Back" />
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
       {isLocked && (
         <Alert>
@@ -394,6 +398,6 @@ export default function VariantReviewPage() {
         recheckingVariantId={recheckingVariantId}
         resolvingFindingId={resolvingFindingId}
       />
-    </div>
+    </PageShell>
   );
 }

@@ -14,6 +14,8 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { BilingualLabel } from '@/components/shared/BilingualLabel';
+import { PageShell } from '@/components/shared/PageShell';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { useProject } from '@/hooks/useProjects';
 import { useDeliveriesForProject } from '@/hooks/useDeliveriesForProject';
 import type { DeliveryStatus } from '@/types/domain';
@@ -66,36 +68,32 @@ export default function DeliveriesListPage() {
   if (!projectId) return <Navigate to="/projects" replace />;
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <header className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl">
-            <BilingualLabel
-              ja={`配信履歴: ${project?.name ?? '—'}`}
-              en={`Deliveries: ${project?.name ?? '—'}`}
-            />
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            <BilingualLabel
-              ja="このプロジェクトから作成された配信の一覧です。"
-              en="All deliveries created from this project."
-            />
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" asChild>
-            <Link to={`/projects/${projectId}/audit`}>
-              <BilingualLabel ja="監査に戻る" en="Back to audit" />
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link to={`/projects/${projectId}/deliver`}>
-              <SendIcon className="size-4" />
-              <BilingualLabel ja="新規配信" en="New delivery" />
-            </Link>
-          </Button>
-        </div>
-      </header>
+    <PageShell className="max-w-4xl">
+      <PageHeader
+        breadcrumb={project?.name ?? '—'}
+        title={<BilingualLabel ja="配信履歴" en="Deliveries" />}
+        subtitle={
+          <BilingualLabel
+            ja="このプロジェクトから作成された配信の一覧です。"
+            en="All deliveries created from this project."
+          />
+        }
+        actions={
+          <>
+            <Button variant="outline" asChild>
+              <Link to={`/projects/${projectId}/audit`}>
+                <BilingualLabel ja="監査に戻る" en="Back to audit" />
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link to={`/projects/${projectId}/deliver`}>
+                <SendIcon className="size-4" />
+                <BilingualLabel ja="新規配信" en="New delivery" />
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
       {isLoading && (
         <div className="space-y-2">
@@ -122,7 +120,7 @@ export default function DeliveriesListPage() {
       )}
 
       {!isLoading && !isError && (!data || data.length === 0) && (
-        <div className="rounded-md border border-dashed p-10 text-center space-y-3">
+        <div className="space-y-3 rounded-xl border border-dashed p-10 text-center">
           <MailIcon className="mx-auto size-8 text-muted-foreground" />
           <p>
             <BilingualLabel
@@ -209,6 +207,6 @@ export default function DeliveriesListPage() {
           </TableBody>
         </Table>
       )}
-    </div>
+    </PageShell>
   );
 }

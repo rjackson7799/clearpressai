@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BilingualLabel } from '@/components/shared/BilingualLabel';
+import { PageShell } from '@/components/shared/PageShell';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { useProjectSummaries } from '@/hooks/useProjects';
 
 function formatDate(value: string | null, locale: string) {
@@ -45,17 +47,23 @@ export default function ProjectsListPage() {
   const { data, isLoading, isError, refetch } = useProjectSummaries();
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl">
-          <BilingualLabel ja="プロジェクト" en="Projects" />
-        </h1>
-        <Button asChild>
-          <Link to="/projects/new">
-            <BilingualLabel ja="新規プロジェクト" en="New Project" />
-          </Link>
-        </Button>
-      </div>
+    <PageShell>
+      <PageHeader
+        title={<BilingualLabel ja="プロジェクト" en="Projects" />}
+        subtitle={
+          <BilingualLabel
+            ja="ブリーフを作成し、オンボイスのドラフトを生成します。"
+            en="Draft briefs and generate on-voice, compliance-aware content."
+          />
+        }
+        actions={
+          <Button asChild>
+            <Link to="/projects/new">
+              <BilingualLabel ja="新規プロジェクト" en="New Project" />
+            </Link>
+          </Button>
+        }
+      />
 
       {isLoading && (
         <div className="space-y-2">
@@ -184,6 +192,6 @@ export default function ProjectsListPage() {
           </TableBody>
         </Table>
       )}
-    </div>
+    </PageShell>
   );
 }

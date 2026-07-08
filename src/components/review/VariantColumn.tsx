@@ -55,7 +55,7 @@ export function VariantColumn({
   const hasFindings = findings.length > 0;
 
   return (
-    <div className="rounded-md border bg-card flex flex-col">
+    <div className="flex flex-col overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
       <div className="flex flex-col gap-2 px-4 py-3 border-b">
         <div className="flex items-center gap-2 flex-wrap">
           <Badge variant="secondary" className="shrink-0">

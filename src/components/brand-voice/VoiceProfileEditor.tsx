@@ -77,9 +77,9 @@ export function VoiceProfileEditor({ clientId }: Props) {
 
   if (!profile) {
     return (
-      <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
+      <p className="py-4 text-center text-sm text-muted-foreground">
         {t("brandVoice.profileEmpty")}
-      </div>
+      </p>
     );
   }
 

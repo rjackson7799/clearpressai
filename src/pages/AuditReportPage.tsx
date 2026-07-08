@@ -16,6 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { BilingualLabel } from "@/components/shared/BilingualLabel";
+import { PageShell } from "@/components/shared/PageShell";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { AuditTrailTimeline } from "@/components/audit/AuditTrailTimeline";
 import { SignatureBlock } from "@/components/audit/SignatureBlock";
 import { SignAuditDialog } from "@/components/audit/SignAuditDialog";
@@ -112,46 +114,49 @@ export default function AuditReportPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            {client?.name ? <span>{client.name}</span> : <span>—</span>}
-          </div>
-          <h1 className="text-2xl">
-            <BilingualLabel
-              ja={`監査レポート: ${project?.name ?? "—"}`}
-              en={`Audit report: ${project?.name ?? "—"}`}
-            />
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" asChild>
-            <Link to={`/projects/${projectId}/review`}>
-              <BilingualLabel ja="レビューに戻る" en="Back to review" />
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link to={`/projects/${projectId}/deliveries`}>
-              <MailIcon className="size-4" />
-              <BilingualLabel ja="配信履歴" en="Deliveries" />
-            </Link>
-          </Button>
-          {selectedReport && (selectedReport.status === "finalized" || selectedReport.status === "revised") && (
+    <PageShell className="max-w-4xl">
+      <PageHeader
+        breadcrumb={client?.name ?? "—"}
+        title={
+          <BilingualLabel
+            ja={`監査レポート: ${project?.name ?? "—"}`}
+            en={`Audit report: ${project?.name ?? "—"}`}
+          />
+        }
+        actions={
+          <>
             <Button variant="outline" asChild>
-              <Link to={`/print/audit-report/${selectedReport.id}`} target="_blank">
-                <PrinterIcon className="size-4" />
-                <BilingualLabel ja="印刷" en="Print" />
+              <Link to={`/projects/${projectId}/review`}>
+                <BilingualLabel ja="レビューに戻る" en="Back to review" />
               </Link>
             </Button>
-          )}
-        </div>
-      </div>
+            <Button variant="outline" asChild>
+              <Link to={`/projects/${projectId}/deliveries`}>
+                <MailIcon className="size-4" />
+                <BilingualLabel ja="配信履歴" en="Deliveries" />
+              </Link>
+            </Button>
+            {selectedReport &&
+              (selectedReport.status === "finalized" ||
+                selectedReport.status === "revised") && (
+                <Button variant="outline" asChild>
+                  <Link
+                    to={`/print/audit-report/${selectedReport.id}`}
+                    target="_blank"
+                  >
+                    <PrinterIcon className="size-4" />
+                    <BilingualLabel ja="印刷" en="Print" />
+                  </Link>
+                </Button>
+              )}
+          </>
+        }
+      />
 
       {reportsLoading && <Skeleton className="h-32 w-full" />}
 
       {!reportsLoading && !selectedReport && (
-        <div className="rounded-md border border-dashed p-8 text-center space-y-3">
+        <div className="space-y-3 rounded-xl border border-dashed p-8 text-center">
           <FileTextIcon className="mx-auto size-8 text-muted-foreground" />
           <p>
             <BilingualLabel
@@ -178,7 +183,7 @@ export default function AuditReportPage() {
 
       {selectedReport && (
         <>
-          <div className="rounded-md border bg-card p-4 flex items-start justify-between gap-3 flex-wrap">
+          <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
             <div className="space-y-1">
               <p className="font-mono text-sm">{selectedReport.report_id_display}</p>
               <div className="flex items-center gap-2 text-sm flex-wrap">
@@ -284,7 +289,7 @@ export default function AuditReportPage() {
             content.variants.map((v) => (
               <section
                 key={v.id}
-                className="rounded-md border bg-card p-4 space-y-3"
+                className="space-y-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10"
               >
                 <header className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2">
@@ -333,14 +338,14 @@ export default function AuditReportPage() {
               </section>
             ))}
 
-          <section className="rounded-md border bg-card p-4 space-y-3">
+          <section className="space-y-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
             <h2 className="text-base font-medium">
               <BilingualLabel ja="署名" en="Signatures" />
             </h2>
             <SignatureBlock signatures={reportWithSigs?.signatures ?? []} />
           </section>
 
-          <section className="rounded-md border bg-card p-4 space-y-3">
+          <section className="space-y-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
             <h2 className="text-base font-medium">
               <BilingualLabel ja="監査トレイル" en="Audit trail" />
             </h2>
@@ -379,6 +384,6 @@ export default function AuditReportPage() {
           setSearchParams({ reportId: newReport.id });
         }}
       />
-    </div>
+    </PageShell>
   );
 }

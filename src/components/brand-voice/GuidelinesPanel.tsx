@@ -59,7 +59,7 @@ export function GuidelinesPanel({ clientId }: Props) {
 
   return (
     <div className="space-y-6">
-      <section className="space-y-2 rounded-md border bg-card p-4">
+      <section className="space-y-2 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
         <h3 className="text-sm font-medium">{t("guidelines.addAnnotation")}</h3>
         <Textarea
           value={draft}
@@ -84,7 +84,7 @@ export function GuidelinesPanel({ clientId }: Props) {
           ))}
         </div>
       ) : !guidelines || guidelines.length === 0 ? (
-        <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
+        <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
           {t("guidelines.empty")}
         </div>
       ) : (
@@ -94,7 +94,7 @@ export function GuidelinesPanel({ clientId }: Props) {
             return (
               <li
                 key={g.id}
-                className="space-y-2 rounded-md border bg-card p-4"
+                className="space-y-2 rounded-xl bg-card p-4 ring-1 ring-foreground/10"
               >
                 <div className="flex items-center justify-between gap-2">
                   <Badge

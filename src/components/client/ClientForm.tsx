@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { BilingualLabel } from "@/components/shared/BilingualLabel";
 import {
   clientFormSchema,
@@ -49,97 +50,101 @@ export function ClientForm({
 
   return (
     <Form {...form}>
-      <form noValidate onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-w-xl">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                <BilingualLabel ja="クライアント名" en="Name" />
-              </FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage>
-                {form.formState.errors.name?.message
-                  ? t(form.formState.errors.name.message)
-                  : null}
-              </FormMessage>
-            </FormItem>
-          )}
-        />
+      <form noValidate onSubmit={form.handleSubmit(onSubmit)}>
+        <Card>
+          <CardContent className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    <BilingualLabel ja="クライアント名" en="Name" />
+                  </FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage>
+                    {form.formState.errors.name?.message
+                      ? t(form.formState.errors.name.message)
+                      : null}
+                  </FormMessage>
+                </FormItem>
+              )}
+            />
 
-        <FormField
-          control={form.control}
-          name="name_en"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                <BilingualLabel ja="英語名" en="English name" />
-              </FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+            <FormField
+              control={form.control}
+              name="name_en"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    <BilingualLabel ja="英語名" en="English name" />
+                  </FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
 
-        <FormField
-          control={form.control}
-          name="primary_contact_name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                <BilingualLabel ja="担当者名" en="Primary contact" />
-              </FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+            <FormField
+              control={form.control}
+              name="primary_contact_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    <BilingualLabel ja="担当者名" en="Primary contact" />
+                  </FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
 
-        <FormField
-          control={form.control}
-          name="primary_contact_email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                <BilingualLabel ja="担当者メール" en="Contact email" />
-              </FormLabel>
-              <FormControl>
-                <Input type="email" {...field} />
-              </FormControl>
-              <FormMessage>
-                {form.formState.errors.primary_contact_email?.message
-                  ? t(form.formState.errors.primary_contact_email.message)
-                  : null}
-              </FormMessage>
-            </FormItem>
-          )}
-        />
+            <FormField
+              control={form.control}
+              name="primary_contact_email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    <BilingualLabel ja="担当者メール" en="Contact email" />
+                  </FormLabel>
+                  <FormControl>
+                    <Input type="email" {...field} />
+                  </FormControl>
+                  <FormMessage>
+                    {form.formState.errors.primary_contact_email?.message
+                      ? t(form.formState.errors.primary_contact_email.message)
+                      : null}
+                  </FormMessage>
+                </FormItem>
+              )}
+            />
 
-        <FormField
-          control={form.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                <BilingualLabel ja="メモ" en="Notes" />
-              </FormLabel>
-              <FormControl>
-                <Textarea rows={4} {...field} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    <BilingualLabel ja="メモ" en="Notes" />
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea rows={4} {...field} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
 
-        <div className="pt-2">
-          <Button type="submit" disabled={submitting}>
-            <BilingualLabel ja={submitLabelJa} en={submitLabelEn} />
-          </Button>
-        </div>
+            <div className="pt-2">
+              <Button type="submit" disabled={submitting}>
+                <BilingualLabel ja={submitLabelJa} en={submitLabelEn} />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </form>
     </Form>
   );

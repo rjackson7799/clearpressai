@@ -5,6 +5,12 @@ import { ChevronLeftIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -17,6 +23,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { BilingualLabel } from "@/components/shared/BilingualLabel";
+import { PageShell } from "@/components/shared/PageShell";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { ClientForm } from "@/components/client/ClientForm";
 import type { ClientFormValues } from "@/components/client/ClientForm.schema";
 import {
@@ -45,21 +53,21 @@ export default function ClientDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <PageShell className="space-y-4">
         <Skeleton className="h-10 w-72" />
         <Skeleton className="h-64 w-full" />
-      </div>
+      </PageShell>
     );
   }
 
   if (isError || !client) {
     return (
-      <div className="space-y-2">
+      <PageShell className="space-y-2">
         <p>{t("common.error")}</p>
         <Button variant="outline" asChild>
           <Link to="/clients">{t("common.back")}</Link>
         </Button>
-      </div>
+      </PageShell>
     );
   }
 
@@ -91,36 +99,36 @@ export default function ClientDetailPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <Link
-        to="/clients"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ChevronLeftIcon className="size-4" />
-        <BilingualLabel ja="クライアント一覧" en="Clients" />
-      </Link>
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-medium">{client.name}</h1>
-          {client.name_en && (
-            <p className="text-muted-foreground">{client.name_en}</p>
-          )}
-        </div>
-        <div className="flex gap-2">
-          {!editing && (
-            <Button variant="outline" onClick={() => setEditing(true)}>
-              {t("common.edit")}
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            className="text-destructive hover:text-destructive"
-            onClick={() => setConfirmDelete(true)}
+    <PageShell>
+      <PageHeader
+        breadcrumb={
+          <Link
+            to="/clients"
+            className="inline-flex items-center gap-1 hover:text-foreground"
           >
-            {t("common.delete")}
-          </Button>
-        </div>
-      </div>
+            <ChevronLeftIcon className="size-4" />
+            <BilingualLabel ja="クライアント一覧" en="Clients" />
+          </Link>
+        }
+        title={client.name}
+        subtitle={client.name_en || undefined}
+        actions={
+          <>
+            {!editing && (
+              <Button variant="outline" onClick={() => setEditing(true)}>
+                {t("common.edit")}
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              className="text-destructive hover:text-destructive"
+              onClick={() => setConfirmDelete(true)}
+            >
+              {t("common.delete")}
+            </Button>
+          </>
+        }
+      />
 
       <Tabs defaultValue="details">
         <TabsList>
@@ -164,9 +172,30 @@ export default function ClientDetailPage() {
 
         <TabsContent value="brandVoice" className="pt-6 space-y-6">
           <ReadinessGate clientId={id} />
-          <SampleUploader clientId={id} />
-          <SampleList clientId={id} />
-          <VoiceProfileEditor clientId={id} />
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <BilingualLabel
+                  ja="ブランドボイスサンプル"
+                  en="Brand voice samples"
+                />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <SampleUploader clientId={id} />
+              <SampleList clientId={id} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <BilingualLabel ja="ボイスプロファイル" en="Voice profile" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <VoiceProfileEditor clientId={id} />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="guidelines" className="pt-6">
@@ -194,7 +223,7 @@ export default function ClientDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageShell>
   );
 }
 
@@ -205,27 +234,31 @@ function ClientDetailsReadOnly({
 }) {
   const { t } = useTranslation();
   return (
-    <dl className="grid max-w-2xl grid-cols-[12rem_1fr] gap-y-3 text-sm">
-      <Row label={t("clients.name")} value={client.name} />
-      <Row label={t("clients.nameEn")} value={client.name_en ?? "—"} />
-      <Row
-        label={t("clients.industry")}
-        value={
-          client.industry === "pharmaceutical"
-            ? t("clients.industry_pharmaceutical")
-            : client.industry
-        }
-      />
-      <Row
-        label={t("clients.primaryContactName")}
-        value={client.primary_contact_name ?? "—"}
-      />
-      <Row
-        label={t("clients.primaryContactEmail")}
-        value={client.primary_contact_email ?? "—"}
-      />
-      <Row label={t("clients.notes")} value={client.notes ?? "—"} />
-    </dl>
+    <Card>
+      <CardContent>
+        <dl className="grid max-w-2xl grid-cols-[12rem_1fr] gap-y-3 text-sm">
+          <Row label={t("clients.name")} value={client.name} />
+          <Row label={t("clients.nameEn")} value={client.name_en ?? "—"} />
+          <Row
+            label={t("clients.industry")}
+            value={
+              client.industry === "pharmaceutical"
+                ? t("clients.industry_pharmaceutical")
+                : client.industry
+            }
+          />
+          <Row
+            label={t("clients.primaryContactName")}
+            value={client.primary_contact_name ?? "—"}
+          />
+          <Row
+            label={t("clients.primaryContactEmail")}
+            value={client.primary_contact_email ?? "—"}
+          />
+          <Row label={t("clients.notes")} value={client.notes ?? "—"} />
+        </dl>
+      </CardContent>
+    </Card>
   );
 }
 
