@@ -1,44 +1,37 @@
-import { Link } from 'react-router-dom';
-import {
-  Card,
-  CardHeader,
-  CardDescription,
-  CardContent,
-} from '@/components/ui/card';
-import { BilingualLabel } from '@/components/shared/BilingualLabel';
+import type { LucideIcon } from 'lucide-react';
+import { Users, FolderKanban, Clock, ShieldAlert } from 'lucide-react';
+import { StatCard, type StatAccent } from './StatCard';
+import type { StatKey, StatViewModel } from '@/lib/dashboard-metrics';
+
+const META: Record<StatKey, { icon: LucideIcon; accent: StatAccent }> = {
+  clients: { icon: Users, accent: 'primary' },
+  projects: { icon: FolderKanban, accent: 'emerald' },
+  in_review: { icon: Clock, accent: 'amber' },
+  findings: { icon: ShieldAlert, accent: 'red' },
+};
 
 interface Props {
-  clientCount: number;
-  projectCount: number;
+  stats: StatViewModel[];
 }
 
-export function DashboardStats({ clientCount, projectCount }: Props) {
+export function DashboardStats({ stats }: Props) {
   return (
-    <div className="grid grid-cols-2 gap-4">
-      <Link to="/clients">
-        <Card className="transition-shadow hover:ring-foreground/20">
-          <CardHeader>
-            <CardDescription>
-              <BilingualLabel ja="クライアント" en="Clients" />
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <span className="text-3xl font-semibold">{clientCount}</span>
-          </CardContent>
-        </Card>
-      </Link>
-      <Link to="/projects">
-        <Card className="transition-shadow hover:ring-foreground/20">
-          <CardHeader>
-            <CardDescription>
-              <BilingualLabel ja="プロジェクト" en="Projects" />
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <span className="text-3xl font-semibold">{projectCount}</span>
-          </CardContent>
-        </Card>
-      </Link>
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {stats.map((s) => {
+        const { icon, accent } = META[s.key];
+        return (
+          <StatCard
+            key={s.key}
+            icon={icon}
+            accent={accent}
+            labelJa={s.labelJa}
+            labelEn={s.labelEn}
+            value={s.value}
+            badge={s.badge}
+            to={s.to}
+          />
+        );
+      })}
     </div>
   );
 }

@@ -42,10 +42,13 @@ function renderWithProviders(initialEntries: string[]) {
 describe("App routing", () => {
   it("renders dashboard at / when authed", () => {
     renderWithProviders(["/"]);
-    // The list queries hang/error in this smoke; the page heading is the
-    // stable assertion. Onboarding logic is unit-tested in onboarding.test.ts.
+    // The list queries hang/error in this smoke; the greeting-hero heading is
+    // the stable assertion (the page no longer shows a static "Dashboard"
+    // title). Onboarding logic is unit-tested in onboarding.test.ts.
     expect(
-      screen.getByRole("heading", { name: /Dashboard|ダッシュボード/ }),
+      screen.getByRole("heading", {
+        name: /おはよう|こんにちは|こんばんは|Good (morning|afternoon|evening)/,
+      }),
     ).toBeInTheDocument();
   });
 
