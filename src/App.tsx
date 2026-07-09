@@ -30,6 +30,7 @@ const DeliveriesListPage = lazy(() => import("@/pages/DeliveriesListPage"));
 const DeliveryComposerPage = lazy(() => import("@/pages/DeliveryComposerPage"));
 const PrintAuditReportPage = lazy(() => import("@/pages/PrintAuditReportPage"));
 const HelpPage = lazy(() => import("@/pages/HelpPage"));
+const InternalFeedbackPage = lazy(() => import("@/pages/InternalFeedbackPage"));
 const NotFoundPage = lazy(() => import("@/pages/NotFoundPage"));
 
 export default function App() {
@@ -67,6 +68,7 @@ export default function App() {
               <Route path="/projects/:id/audit" element={<AuditReportPage />} />
               <Route path="/projects/:id/deliver" element={<DeliveryComposerPage />} />
               <Route path="/projects/:id/deliveries" element={<DeliveriesListPage />} />
+              <Route path="/feedback" element={<InternalFeedbackPage />} />
               <Route path="/help" element={<HelpPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>

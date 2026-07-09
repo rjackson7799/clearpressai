@@ -873,6 +873,92 @@ export type Database = {
           },
         ]
       }
+      internal_feedback: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          message: string
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          message: string
+          status?: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          message?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_feedback_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internal_feedback_attachments: {
+        Row: {
+          byte_size: number
+          created_at: string
+          feedback_id: string
+          filename: string
+          id: string
+          mime_type: string
+          storage_path: string
+          uploaded_by: string
+        }
+        Insert: {
+          byte_size: number
+          created_at?: string
+          feedback_id: string
+          filename: string
+          id?: string
+          mime_type: string
+          storage_path: string
+          uploaded_by: string
+        }
+        Update: {
+          byte_size?: number
+          created_at?: string
+          feedback_id?: string
+          filename?: string
+          id?: string
+          mime_type?: string
+          storage_path?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_feedback_attachments_feedback_id_fkey"
+            columns: ["feedback_id"]
+            isOneToOne: false
+            referencedRelation: "internal_feedback"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_feedback_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           client_id: string

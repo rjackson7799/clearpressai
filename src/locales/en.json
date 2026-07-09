@@ -211,5 +211,21 @@
       "client_feedback": "Client feedback",
       "legal_review": "Legal review"
     }
+  },
+  "internalFeedback": {
+    "messagePlaceholder": "Describe the issue or request…",
+    "toasts": {
+      "submitted": "Feedback submitted",
+      "submitFailed": "Failed to submit feedback",
+      "statusUpdated": "Status updated",
+      "statusUpdateFailed": "Failed to update status",
+      "deleted": "Feedback deleted",
+      "deleteFailed": "Failed to delete feedback"
+    },
+    "errors": {
+      "messageRequired": "Please enter a message",
+      "unsupportedImage": "Only PNG, JPEG, GIF, or WebP images are allowed",
+      "fileTooLarge": "Each image must be 5 MB or smaller"
+    }
   }
 }

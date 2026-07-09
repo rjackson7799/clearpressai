@@ -211,5 +211,21 @@
       "client_feedback": "クライアントフィードバック",
       "legal_review": "リーガルレビュー"
     }
+  },
+  "internalFeedback": {
+    "messagePlaceholder": "不具合の内容やご要望をご記入ください…",
+    "toasts": {
+      "submitted": "フィードバックを送信しました",
+      "submitFailed": "フィードバックの送信に失敗しました",
+      "statusUpdated": "ステータスを更新しました",
+      "statusUpdateFailed": "ステータスの更新に失敗しました",
+      "deleted": "フィードバックを削除しました",
+      "deleteFailed": "フィードバックの削除に失敗しました"
+    },
+    "errors": {
+      "messageRequired": "内容を入力してください",
+      "unsupportedImage": "PNG / JPEG / GIF / WebP 画像のみアップロードできます",
+      "fileTooLarge": "画像は各5MB以下にしてください"
+    }
   }
 }

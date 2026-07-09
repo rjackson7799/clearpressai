@@ -47,6 +47,17 @@ export type AttachmentFormat = 'pdf' | 'word' | 'both';
 export type ScheduledSend = Tables['scheduled_sends']['Row'];
 export type FeedbackToken = Tables['feedback_tokens']['Row'];
 
+export type InternalFeedback = Tables['internal_feedback']['Row'];
+export type InternalFeedbackInsert = Tables['internal_feedback']['Insert'];
+export type InternalFeedbackUpdate = Tables['internal_feedback']['Update'];
+export type InternalFeedbackAttachment =
+  Tables['internal_feedback_attachments']['Row'];
+export type InternalFeedbackAttachmentInsert =
+  Tables['internal_feedback_attachments']['Insert'];
+
+export type InternalFeedbackType = 'bug' | 'feature' | 'improvement';
+export type InternalFeedbackStatus = 'pending' | 'in_progress' | 'completed';
+
 export type ContentType =
   | 'press_release'
   | 'blog_post'
