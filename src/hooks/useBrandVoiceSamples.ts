@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { extractTextFromFile, validateFile } from '@/lib/utils/file-extraction';
+import { safeStorageKey } from '@/lib/utils/storage-key';
 import type { BrandVoiceSample } from '@/types/domain';
 
 const STORAGE_BUCKET = 'brand-voice-samples';
@@ -37,11 +38,14 @@ export function useUploadSample(clientId: string) {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) throw new Error('Not authenticated');
 
-      const storagePath = `${clientId}/${crypto.randomUUID()}-${file.name}`;
+      const storagePath = safeStorageKey(clientId, file);
       const { error: uploadError } = await supabase.storage
         .from(STORAGE_BUCKET)
         .upload(storagePath, file, { contentType: file.type });
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Brand voice upload failed', uploadError);
+        throw uploadError;
+      }
 
       const { data: row, error: insertError } = await supabase
         .from('brand_voice_samples')
