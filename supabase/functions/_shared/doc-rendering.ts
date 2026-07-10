@@ -56,7 +56,6 @@ function buildFooterText(meta: DocMeta): string {
 }
 
 export function buildPdfHtml(snapshot: DeliverySnapshot): string {
-  const meta = buildDocMeta(snapshot);
   const sections = snapshot.variants
     .slice()
     .sort((a, b) => a.variant_index - b.variant_index)
@@ -71,35 +70,17 @@ export function buildPdfHtml(snapshot: DeliverySnapshot): string {
     })
     .join('\n');
 
-  const footerHtml = escapeHtml(buildFooterText(meta));
-  const bannerHtml = escapeHtml(BANNER_TEXT);
-
+  // The DRAFT banner + footer are NOT in this HTML — they're passed to pdfshift
+  // as native header/footer request options (buildPdfOptions) so they repeat on
+  // every page. pdfshift v3 is Chromium, which ignores CSS running-elements.
+  // overflow-wrap: anywhere is required because Chromium won't break space-free
+  // Japanese to fit the page without an explicit break opportunity.
   const style = `
-    @page {
-      margin: 90px 40px 60px;
-      @top-center { content: element(running-banner); }
-      @bottom-center { content: element(running-footer); }
-    }
-    .running-banner {
-      position: running(running-banner);
-      background: #ea580c;
-      color: #ffffff;
-      text-align: center;
-      padding: 8px 0;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-    }
-    .running-footer {
-      position: running(running-footer);
-      color: #6b7280;
-      text-align: center;
-      font-size: 9px;
-    }
     body {
       font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif;
       line-height: 1.7;
       color: #111827;
+      overflow-wrap: anywhere;
     }
     section + section { page-break-before: always; }
     h2 {
@@ -109,6 +90,7 @@ export function buildPdfHtml(snapshot: DeliverySnapshot): string {
     }
     pre {
       white-space: pre-wrap;
+      overflow-wrap: anywhere;
       font-family: inherit;
     }
   `;
@@ -122,12 +104,76 @@ export function buildPdfHtml(snapshot: DeliverySnapshot): string {
     `<style>${style}</style>`,
     '</head>',
     '<body>',
-    `<div class="running-banner">${bannerHtml}</div>`,
-    `<div class="running-footer">${footerHtml}</div>`,
     sections,
     '</body>',
     '</html>',
   ].join('\n');
+}
+
+const PDF_FONT_STACK =
+  "'Hiragino Kaku Gothic ProN','Yu Gothic','Meiryo',sans-serif";
+
+// pdfshift header/footer are rendered independently and do NOT inherit body CSS
+// or sanitization — style inline and escape any dynamic content here.
+export function buildPdfHeaderSource(): string {
+  return `<div style="font-family:${PDF_FONT_STACK};`
+    + `width:100%;background:#ea580c;color:#fff;text-align:center;`
+    + `padding:6px 0;font-size:12px;font-weight:700;letter-spacing:0.5px;">`
+    + `${escapeHtml(BANNER_TEXT)}</div>`;
+}
+
+export function buildPdfFooterSource(meta: DocMeta): string {
+  // meta.projectName is untrusted; escapeHtml is the injection guard for the
+  // independently-rendered footer markup.
+  return `<div style="font-family:${PDF_FONT_STACK};`
+    + `width:100%;color:#6b7280;text-align:center;font-size:9px;">`
+    + `${escapeHtml(buildFooterText(meta))}</div>`;
+}
+
+// pdfshift v3 dimensions. PROVISIONAL — tuned against a real sandbox render;
+// top margin must clear the header, bottom margin must clear the footer.
+const PDF_HEADER_HEIGHT = '48';
+const PDF_FOOTER_HEIGHT = '32';
+const PDF_MARGIN = { top: '90', right: '40', bottom: '60', left: '40' } as const;
+
+export interface PdfOptions {
+  readonly header?: {
+    readonly source: string;
+    readonly height?: string;
+    readonly start_at?: number;
+  };
+  readonly footer?: {
+    readonly source: string;
+    readonly height?: string;
+    readonly start_at?: number;
+  };
+  readonly margin?: {
+    readonly top: string;
+    readonly right: string;
+    readonly bottom: string;
+    readonly left: string;
+  };
+  readonly format?: string;
+}
+
+// Single source of truth for the PDF request options — both send paths call
+// this, so immediate + scheduled deliveries can't drift.
+export function buildPdfOptions(meta: DocMeta): PdfOptions {
+  return {
+    format: 'A4',
+    header: { source: buildPdfHeaderSource(), height: PDF_HEADER_HEIGHT },
+    footer: { source: buildPdfFooterSource(meta), height: PDF_FOOTER_HEIGHT },
+    margin: PDF_MARGIN,
+  };
+}
+
+// Pure pdfshift request-body assembly. `source` is spread last so a caller can't
+// override the document HTML through opts.
+export function buildPdfConvertBody(
+  html: string,
+  opts: PdfOptions = {},
+): Record<string, unknown> {
+  return { ...opts, source: html };
 }
 
 export const DRAFT_BANNER_TEXT = BANNER_TEXT;

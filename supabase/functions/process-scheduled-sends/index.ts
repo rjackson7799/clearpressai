@@ -36,7 +36,11 @@ import {
   generateDocx,
   generatePdf,
 } from '../_shared/attachments.ts';
-import { buildDocMeta, buildPdfHtml } from '../_shared/doc-rendering.ts';
+import {
+  buildDocMeta,
+  buildPdfHtml,
+  buildPdfOptions,
+} from '../_shared/doc-rendering.ts';
 import { applyFeedbackToBody } from '../_shared/delivery-template.ts';
 import { buildFeedbackUrl } from '../_shared/magic-link.ts';
 import type { DeliverySnapshot } from '../_shared/types-delivery.ts';
@@ -358,7 +362,7 @@ async function buildAttachments(
   }));
   const tasks: Promise<Attachment>[] = [];
   if (format === 'pdf' || format === 'both') {
-    tasks.push(generatePdf(html, `${safeName}.pdf`));
+    tasks.push(generatePdf(html, `${safeName}.pdf`, buildPdfOptions(meta)));
   }
   if (format === 'word' || format === 'both') {
     tasks.push(generateDocx(blocks, `${safeName}.docx`, meta));

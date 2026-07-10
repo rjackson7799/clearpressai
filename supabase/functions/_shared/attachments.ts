@@ -29,8 +29,12 @@ import {
   ShadingType,
   TextRun,
 } from 'docx';
-import type { DocMeta } from './doc-rendering.ts';
-import { DRAFT_BANNER_TEXT, buildPdfFooterText } from './doc-rendering.ts';
+import type { DocMeta, PdfOptions } from './doc-rendering.ts';
+import {
+  buildPdfConvertBody,
+  DRAFT_BANNER_TEXT,
+  buildPdfFooterText,
+} from './doc-rendering.ts';
 
 export type AttachmentWhich = 'pdf' | 'docx';
 
@@ -61,6 +65,7 @@ export function sanitizeFilename(name: string): string {
 export async function generatePdf(
   html: string,
   filename: string,
+  opts: PdfOptions = {},
 ): Promise<Attachment> {
   const apiKey = normalizeSecret(Deno.env.get('PDFSHIFT_API_KEY'));
   if (!apiKey) {
@@ -72,7 +77,7 @@ export async function generatePdf(
       'X-API-Key': apiKey,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ source: html }),
+    body: JSON.stringify(buildPdfConvertBody(html, opts)),
   });
   if (!res.ok) {
     const errText = await res.text();

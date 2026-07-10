@@ -42,7 +42,11 @@ import {
   generateDocx,
   generatePdf,
 } from '../_shared/attachments.ts';
-import { buildDocMeta, buildPdfHtml } from '../_shared/doc-rendering.ts';
+import {
+  buildDocMeta,
+  buildPdfHtml,
+  buildPdfOptions,
+} from '../_shared/doc-rendering.ts';
 import { ResendError, sendEmail } from '../_shared/resend.ts';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -269,7 +273,7 @@ function planAttachments(
 
   const tasks: Promise<Attachment>[] = [];
   if (format === 'pdf' || format === 'both') {
-    tasks.push(generatePdf(html, `${safeName}.pdf`));
+    tasks.push(generatePdf(html, `${safeName}.pdf`, buildPdfOptions(meta)));
   }
   if (format === 'word' || format === 'both') {
     tasks.push(generateDocx(blocks, `${safeName}.docx`, meta));
