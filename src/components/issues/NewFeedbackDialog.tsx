@@ -139,6 +139,7 @@ export function NewFeedbackDialog() {
                   <FormControl>
                     <Textarea
                       rows={5}
+                      className="max-h-[40vh] overflow-y-auto"
                       placeholder={t("internalFeedback.messagePlaceholder")}
                       {...field}
                     />
