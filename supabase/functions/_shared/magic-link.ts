@@ -16,6 +16,23 @@ export function buildFeedbackUrl(base: string, token: string): string {
   if (!isValidTokenFormat(token)) {
     throw new Error('invalid_token_format');
   }
-  const trimmed = base.replace(/\/+$/, '');
-  return `${trimmed}/f/${token}`;
+  let u: URL;
+  try {
+    u = new URL(base);
+  } catch {
+    throw new Error('invalid_feedback_base');
+  }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') {
+    throw new Error('invalid_feedback_base');
+  }
+  // The feedback route lives at the app root (/f/:token). Build from the origin
+  // so a base misconfigured with a trailing "/f" (or any stray path / query /
+  // fragment) can't produce /f/f/<token>, which fails to match the route and
+  // 404s. Warn on an unexpected path so the misconfig stays visible in the
+  // Edge Function logs instead of being silently normalized away.
+  const path = u.pathname.replace(/\/+$/, '');
+  if (path !== '' && path !== '/f') {
+    console.warn(`buildFeedbackUrl: ignoring unexpected base path "${u.pathname}"`);
+  }
+  return `${u.origin}/f/${token}`;
 }

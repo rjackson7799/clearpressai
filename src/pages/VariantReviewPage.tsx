@@ -29,8 +29,7 @@ import { useAcknowledgeFinding } from '@/hooks/useAcknowledgeFinding';
 import { useReopenFinding } from '@/hooks/useReopenFinding';
 import { useRecordManualReviewStarted } from '@/hooks/useRecordManualReviewStarted';
 import { useLatestAuditReport } from '@/hooks/useLatestAuditReport';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { LockIcon } from 'lucide-react';
+import { RevisionBanner } from '@/components/review/RevisionBanner';
 
 export default function VariantReviewPage() {
   const { id: projectId } = useParams<{ id: string }>();
@@ -234,23 +233,7 @@ export default function VariantReviewPage() {
         }
       />
 
-      {isLocked && (
-        <Alert>
-          <LockIcon className="size-4" />
-          <AlertTitle>
-            <BilingualLabel
-              ja="編集ロック中"
-              en="Editing locked"
-            />
-          </AlertTitle>
-          <AlertDescription>
-            <BilingualLabel
-              ja="本案件は確定済の監査レポートに紐づいています。修正には改訂が必要です。"
-              en="This project is tied to a finalized audit report. To edit, request a revision."
-            />
-          </AlertDescription>
-        </Alert>
-      )}
+      <RevisionBanner projectId={projectId} latestReport={latestAuditReport} />
 
       {generating && (
         <div className="space-y-3">

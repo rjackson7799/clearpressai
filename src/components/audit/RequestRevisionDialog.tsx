@@ -22,6 +22,10 @@ interface RequestRevisionDialogProps {
   onOpenChange: (open: boolean) => void;
   projectId: string | undefined;
   onRevised?: (newReport: AuditReport) => void;
+  // Optional prefill for the revision reason. The "Revise & edit" shortcut on
+  // the review page seeds this with the client-feedback context so a
+  // feedback-driven revision carries an audit reason by default.
+  defaultComment?: string;
 }
 
 // P0004 -> localized guidance, narrower set than SignAuditDialog.
@@ -58,16 +62,18 @@ export function RequestRevisionDialog({
   onOpenChange,
   projectId,
   onRevised,
+  defaultComment,
 }: RequestRevisionDialogProps) {
   const revise = useReviseAuditReport(projectId);
-  const [comment, setComment] = useState("");
+  const [comment, setComment] = useState(defaultComment ?? "");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Reset local state on dismiss; avoids react-hooks/set-state-in-effect.
+  // Reset local state on dismiss back to the prefilled default; avoids
+  // react-hooks/set-state-in-effect while keeping the reason prefilled on reopen.
   const handleOpenChange = (next: boolean) => {
     if (!next) {
       setErrorMessage(null);
-      setComment("");
+      setComment(defaultComment ?? "");
     }
     onOpenChange(next);
   };

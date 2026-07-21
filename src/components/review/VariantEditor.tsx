@@ -66,6 +66,20 @@ export function VariantEditor({
     },
   });
 
+  // Toggle contentEditable when the lock flips (the "Revise & edit" flow
+  // unlocks in place). @tiptap/react v3 does NOT re-apply `editable` from
+  // options on a prop change, and the enclosing column's key doesn't change on
+  // revise, so we must call setEditable imperatively. Also drop any queued
+  // autosave when locking so a pending save isn't stranded.
+  useEffect(() => {
+    if (!editor) return;
+    editor.setEditable(!readOnly);
+    if (readOnly && saveTimerRef.current !== null) {
+      window.clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+  }, [editor, readOnly]);
+
   const commitSave = useCallback(async () => {
     if (!editor) return;
     const body = tiptapBodyToText(editor.getHTML());

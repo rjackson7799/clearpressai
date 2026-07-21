@@ -28,9 +28,14 @@ export function useReviseAuditReport(projectId: string | undefined) {
       if (error) throw error;
       return data as AuditReport;
     },
-    onSuccess: (_data, vars) => {
+    onSuccess: (draft, vars) => {
       qc.invalidateQueries({ queryKey: auditReportKey(vars.auditReportId) });
       if (!projectId) return;
+      // Write the new draft into the latest-report cache immediately so the
+      // review page unlocks in place (isLocked recomputes to false) without
+      // waiting on a refetch — avoids a "success toast but still-locked editor"
+      // window. Then invalidate to reconcile with the server.
+      qc.setQueryData(latestAuditReportKey(projectId), draft);
       qc.invalidateQueries({ queryKey: auditReportsKey(projectId) });
       qc.invalidateQueries({ queryKey: latestAuditReportKey(projectId) });
       qc.invalidateQueries({ queryKey: auditTrailEventsKey(projectId) });

@@ -70,6 +70,18 @@ export function VariantColumn({
               <BilingualLabel ja="承認済" en="Approved" />
             </Badge>
           )}
+          {variant.internal_approved &&
+            variant.internal_approved_at &&
+            new Date(variant.updated_at).getTime() >
+              new Date(variant.internal_approved_at).getTime() && (
+              <Badge
+                variant="outline"
+                className="gap-1 shrink-0 border-amber-400 text-amber-700"
+              >
+                <AlertTriangleIcon className="size-3" />
+                <BilingualLabel ja="承認後に変更あり" en="Changed since approval" />
+              </Badge>
+            )}
         </div>
         <div className="flex flex-col gap-2">
           <Button
